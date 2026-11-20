@@ -43,7 +43,8 @@ packages = ["src/vintage_lakehouse"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra --strict-markers --cov=vintage_lakehouse --cov-report=term-missing"
+# Network tests are deselected by default. Run them with: pytest -m network
+addopts = "-ra --strict-markers -m 'not network' --cov=vintage_lakehouse --cov-report=term-missing"
 markers = [
     "slow: long-running tests (benchmarks, large replays)",
     "network: tests that need network access to a data source",
