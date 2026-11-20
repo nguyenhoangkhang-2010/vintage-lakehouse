@@ -9,3 +9,7 @@ All notable changes are documented here. The format follows
 ### Added
 - Project skeleton: package layout, tooling (ruff, mypy, pytest), pre-commit, CI, and
   project documents (research question, architecture, roadmap, ADRs, git workflow).
+- Week-0 data gate: offline-testable gate criteria, a Delphi FluView probe, MMWR epiweek
+  helpers, and the `vintage-lakehouse gate delphi-fluview` command.
+- Gate findings in `docs/DATA_SOURCES.md` and ADR 0004 (primary dataset).
+- `network` pytest marker; network tests are deselected by default (`pytest -m network`).

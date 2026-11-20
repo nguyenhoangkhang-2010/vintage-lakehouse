@@ -19,4 +19,12 @@ new limitation, and keep entries factual.
 
 ## Discovered during development
 
-_None yet._
+- **First dataset is US influenza surveillance.** The week-0 gate passed on Delphi FluView
+  (national weighted ILI). Findings are about that data and cannot be generalised to other
+  diseases, countries or domains without testing them. Not Vietnamese data.
+- **Only early revisions were sampled.** The gate looked at the first 20 weekly issues of each
+  sampled week. Later revisions are not yet characterised.
+- **Full pull needs a free API key (likely).** Anonymous access is rate-limited according to the
+  Delphi documentation. This was not tested for a full historical pull.
+- **Licence not yet verified** for redistributing derived results (see `DATA_SOURCES.md`).
+- **ALFRED / FRED not evaluated.** It needs an API key registered by the project owner.
