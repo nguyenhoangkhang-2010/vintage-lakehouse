@@ -13,3 +13,8 @@ All notable changes are documented here. The format follows
   helpers, and the `vintage-lakehouse gate delphi-fluview` command.
 - Gate findings in `docs/DATA_SOURCES.md` and ADR 0004 (primary dataset).
 - `network` pytest marker; network tests are deselected by default (`pytest -m network`).
+- `Observation` bitemporal model with validated, UTC-normalised times, the `ObservationKey`
+  version identity, and `knowledge_time_from_date` for date-only publication stamps.
+
+### Changed
+- ADR 0002 is accepted and now records the validation rules and the date-only convention.
