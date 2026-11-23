@@ -40,6 +40,14 @@ def make_replicates(n: int, *, n_boot: int, block_length: int, seed: int) -> lis
     return [moving_block_indices(n, block_length, rng) for _ in range(n_boot)]
 
 
+def resample_counts(replicate: Sequence[int], n: int) -> list[int]:
+    """How many times each of ``range(n)`` appears in a resample (its weight in the statistic)."""
+    counts = [0] * n
+    for index in replicate:
+        counts[index] += 1
+    return counts
+
+
 def percentile_interval(samples: Sequence[float], level: float) -> tuple[float, float]:
     """Percentile confidence interval of bootstrap ``samples`` at confidence ``level``."""
     if not samples:

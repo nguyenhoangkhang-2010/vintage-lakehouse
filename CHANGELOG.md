@@ -54,6 +54,19 @@ All notable changes are documented here. The format follows
   0.2% for seasonal naive, 6.4% for ETS and 2.6% for gradient boosting, with block-bootstrap
   intervals.
 
+- Backfill correction (`vintage_lakehouse.backfill`): a `VintageTable` of every version of a
+  series, `estimate_correction` (median revision by age, estimated only from what was known at a
+  cutoff), and `BackfillCorrected`, which wraps any forecaster and gives it the corrected history.
+  ADR 0010 fixes the design, the variants (multiplicative, additive, placebo) and the analysis
+  plan before the run on the evaluation origins.
+- `vintage-lakehouse experiment backfill-recovery`: replays the base models and the corrected
+  models on the same origins and reports improvement and recovery of the leakage gap with
+  block-bootstrap intervals, variant comparisons and the estimated factors.
+- `ReplayConfig.modes` restricts a replay to real time or hindsight only.
+- Result (`docs/RESULTS.md`): the correction does not recover the leakage gap. It made ETS worse
+  (-9.3% [-15.4%, -1.8%]) and had no detectable effect on gradient boosting; the revision bias it
+  learned early in the series was gone from 2015 on.
+
 ### Fixed
 - A warehouse created with a relative path (the default `--data-dir data`) could only be opened
   from the folder where it was created, because Iceberg stored relative file locations. The

@@ -20,7 +20,11 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
-from vintage_lakehouse.experiment.bootstrap import make_replicates, percentile_interval
+from vintage_lakehouse.experiment.bootstrap import (
+    make_replicates,
+    percentile_interval,
+    resample_counts,
+)
 from vintage_lakehouse.replay.harness import Mode, ScoredForecast
 
 _Key = tuple[str, int | None]  # (model, horizon); horizon None means pooled over horizons
@@ -124,13 +128,6 @@ def _ratio(realtime: float, hindsight: float) -> float | None:
     return None if realtime == 0.0 else (realtime - hindsight) / realtime
 
 
-def _weights(replicate: Sequence[int], n: int) -> list[int]:
-    counts = [0] * n
-    for index in replicate:
-        counts[index] += 1
-    return counts
-
-
 def _weighted(cell: _Sums, weights: Sequence[int]) -> tuple[float, float, int]:
     realtime = hindsight = 0.0
     pairs = 0
@@ -156,7 +153,7 @@ def analyze(
         return Analysis(0, [], [])
     if any(index >= n or index < 0 for replicate in replicates for index in replicate):
         raise ValueError("bootstrap replicates refer to origins that do not exist")
-    weight_vectors = [_weights(replicate, n) for replicate in replicates]
+    weight_vectors = [resample_counts(replicate, n) for replicate in replicates]
 
     gap_samples: dict[_Key, list[float | None]] = {}
     degradation_samples: dict[_Key, list[float]] = {}
