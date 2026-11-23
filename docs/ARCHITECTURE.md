@@ -26,7 +26,7 @@ flowchart LR
 | `storage` | Bitemporal model, `as_of` queries, store contract with a reference implementation |
 | `ingestion` | Source clients, raw-response archive, revision detection, lineage log |
 | `replay` | Real-time and hindsight runs, scoring (WIS, error, coverage), leakage gap |
-| `forecast` | Simple baseline forecasters used by the replay harness |
+| `forecast` | Baseline forecasters (seasonal naive, ETS, gradient boosting), see [BASELINES.md](BASELINES.md) |
 | `backfill` | Model that predicts how provisional values will be revised |
 | `audit` | Trust report per dataset and a linter that flags look-ahead in user pipelines |
 | `api` | Read-only HTTP API over `as_of` queries |
