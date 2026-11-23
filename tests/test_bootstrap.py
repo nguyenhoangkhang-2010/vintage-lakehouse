@@ -121,3 +121,10 @@ def test_every_position_can_be_drawn() -> None:
     for _ in range(100):
         drawn.update(moving_block_indices(20, 4, rng))
     assert drawn == set(range(20))
+
+
+def test_resample_counts_give_each_unit_its_weight() -> None:
+    from vintage_lakehouse.experiment.bootstrap import resample_counts
+
+    assert resample_counts([0, 0, 2, 2, 2, 1], 4) == [2, 1, 3, 0]
+    assert resample_counts([], 3) == [0, 0, 0]

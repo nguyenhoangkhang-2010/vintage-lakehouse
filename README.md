@@ -47,7 +47,7 @@ Full tables, caveats and how to reproduce: [docs/RESULTS.md](docs/RESULTS.md).
 | Leakage gap, seasonal naive (relative WIS, 95% CI) | 0.2% [-0.2%, 0.6%] | FluView national wILI | `feature/leakage-gap-experiment` |
 | Leakage gap, ETS | 6.4% [1.3%, 10.0%] | FluView national wILI | `feature/leakage-gap-experiment` |
 | Leakage gap, gradient boosting | 2.6% [0.7%, 4.9%] | FluView national wILI | `feature/leakage-gap-experiment` |
-| Gap recovered by backfill model | not measured yet | – | `feature/backfill-model` |
+| Gap recovered by a backfill correction (ETS, 95% CI) | no recovery: made ETS worse (-9.3% [-15.4%, -1.8%]); GBM +0.4% [-1.2%, 1.8%] | FluView national wILI | `feature/backfill-model` |
 | `as_of` query latency vs table size | not measured yet | – | `feature/benchmarks` |
 | Versioning storage overhead vs full snapshots | not measured yet | – | `feature/benchmarks` |
 
@@ -119,8 +119,8 @@ src/vintage_lakehouse/
   ingestion/   data sources and revision detection
   replay/      real-time replay and hindsight evaluation
   forecast/    baseline forecasters
-  experiment/  the leakage-gap experiment (runner, statistics, report)
-  backfill/    revision (backfill) model
+  experiment/  the leakage-gap and backfill-recovery experiments (runners, statistics, reports)
+  backfill/    vintage table, revision correction and the corrected forecaster
   audit/       trust report and leakage linter
   api/         read-only HTTP API
 tests/         unit, property and integration tests
@@ -137,7 +137,7 @@ data/          local data (git-ignored)
 - [Data sources and week-0 gate](docs/DATA_SOURCES.md)
 - [Baseline forecasters](docs/BASELINES.md)
 - [Results](docs/RESULTS.md)
-- [Running the experiment](docs/EXPERIMENT.md) and its [design](docs/adr/0009-leakage-gap-experiment.md)
+- [Running the experiments](docs/EXPERIMENT.md), with the designs of the [leakage gap](docs/adr/0009-leakage-gap-experiment.md) and of the [backfill correction](docs/adr/0010-backfill-correction.md)
 - [Limitations](docs/LIMITATIONS.md)
 
 ## Scope

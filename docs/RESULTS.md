@@ -119,3 +119,67 @@ numpy 2.2.6, pandas 2.3.3, scikit-learn 1.7.2, statsmodels 0.15.0. The run took 
 minutes, almost all of it gradient boosting for the first evaluation time. Other library
 versions can change the figures in the last digit, so they are quoted to one decimal place.
 See [EXPERIMENT.md](EXPERIMENT.md).
+
+# Results: can a backfill correction recover the gap? (H3)
+
+**Short answer: no, not with the correction fixed in advance.** Designed in
+[ADR 0010](adr/0010-backfill-correction.md) before the run, on the same data, origins and
+horizons as above. The correction rewrites the last four reported weeks by their typical
+revision (median settled/provisional ratio by age, estimated only from what was known at each
+origin) and then calls the unchanged baseline. The base models' gaps in this run are identical
+to those above (0.2%, 6.4%, 2.6%), which checks that the two runs score the same forecasts.
+
+`Improvement` is the mean WIS saved by the correction in real time (positive is better), over
+548 matched forecasts per model, with 95% block-bootstrap intervals. Recovery is the improvement
+divided by the leakage gap.
+
+| Model | Variant | Improvement [95% CI] | Relative | Recovery |
+|-------|---------|----------------------|----------|----------|
+| ETS (gap 6.4%) | primary (ratio) | -0.0255 [-0.0414, -0.0044] | -9.3% [-15.4%, -1.8%] | -145% [-501%, -35%] |
+| ETS | additive | -0.0052 [-0.0101, +0.0011] | -1.9% [-4.0%, 0.4%] | -30% [-99%, 10%] |
+| ETS | placebo | +0.0023 [-0.0018, +0.0053] | 0.8% [-0.7%, 1.9%] | 13% [-21%, 45%] |
+| GBM (gap 2.6%) | primary (ratio) | +0.0009 [-0.0025, +0.0045] | 0.4% [-1.2%, 1.8%] | 14% [-56%, 98%] |
+| GBM | additive | +0.0002 [-0.0023, +0.0032] | 0.1% [-1.1%, 1.2%] | 4% [-61%, 55%] |
+| GBM | placebo | -0.0022 [-0.0054, +0.0012] | -0.9% [-2.0%, 0.6%] | -34% [-152%, 18%] |
+| Seasonal naive (no gap) | primary (ratio) | -0.0003 [-0.0005, -0.0000] | -0.1% | not computed |
+
+What this shows, and what it does not:
+
+- **ETS: the primary correction made forecasts worse**, and the interval excludes zero. Every
+  horizon is worse (improvement -0.018 to -0.033).
+- **Gradient boosting: no detectable effect.** The point estimate recovers 14% of its gap, but
+  the interval runs from -56% to +98%, and the placebo (correction on the wrong lags) is as
+  close to zero as the primary variant. This is not evidence of recovery.
+- **The placebo did not help either**, so there is no sign that the machinery works for another
+  reason. Without the exclusion of 2020-03 to 2021-09 the picture is the same.
+- These are three untuned baselines, one series and one correction.
+
+## Why it does not work here (diagnosis, not a tested fix)
+
+The correction is estimated from all weeks settled before each origin. The first-release bias it
+learns was large early in the series and then disappeared:
+
+| Year | Correction used at the origins (mean lag-0 factor) | Realised median final / first release |
+|------|------|------|
+| 2011 to 2013 | (learning period) | 1.10 to 1.13 |
+| 2015 | 1.089 | 0.996 |
+| 2016 | 1.076 | 0.975 |
+| 2018 | 1.028 | 0.986 |
+| 2020 | 1.013 | 0.984 |
+| 2023 to 2025 | 1.007 to 1.011 | 0.994 to 1.005 |
+
+The bias was about +10% in 2011 to 2013 and is close to zero (slightly negative) from 2015 on.
+An estimate that averages over the whole past keeps correcting for a bias that no longer exists,
+by about 9% in 2015 and by less each year after. The correction therefore starts wrong and slowly
+becomes harmless, which fits ETS being hurt (it extrapolates the last values) and the other
+models being unaffected. So the revision pattern of this series is **not stationary**, and a
+fixed-in-advance, expanding-window estimate cannot track it.
+
+This points at a follow-up (a recent-window estimate, or a model of how the bias changes), but
+that is a new hypothesis chosen after seeing these results, on the same origins. It would need
+its own plan, or fresh data, before it could count as evidence. It was not run.
+
+Command: `vintage-lakehouse experiment backfill-recovery --out results/backfill-recovery`
+(about 50 minutes, with other work running at the same time). Same data identifier and
+environment as above. The yearly table above comes from a one-off diagnostic script outside the
+repository, using `factors.csv` and the stored vintages.

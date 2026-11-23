@@ -57,3 +57,41 @@ checked. Quote them in documents instead, with the manifest's data identifier.
 Two runs with the same configuration and data give identical CSV files. The manifest's
 `dataset_id` must match: it is a hash of the raw responses the store was built from. Figures can
 differ in the last digits if the versions of statsmodels or scikit-learn differ.
+
+# Running the backfill-recovery experiment
+
+How much of the leakage gap can a correction for expected revisions recover in real time? The
+design and the analysis plan are in [ADR 0010](adr/0010-backfill-correction.md).
+
+```text
+vintage-lakehouse experiment backfill-recovery --out results/backfill-recovery
+```
+
+It takes the same options as `leakage-gap` (origins, horizons, models, bootstrap, seed, ...) and
+the same defaults, so its base models score exactly as in the leakage-gap experiment. It adds:
+
+| Option | Use |
+|--------|-----|
+| `--variants backfill` | Run only the primary correction (the first named variant is the primary one) |
+| `--max-lag`, `--settle`, `--min-samples` | The correction settings; the defaults (4, 26, 30) are those fixed in the ADR, so changing them is a robustness check |
+
+Variants: `backfill` (multiplicative, median ratio per lag), `backfill-additive` (median difference
+per lag) and `backfill-placebo` (the primary factors applied to the wrong lags, as a control).
+
+It replays the base models in real time and hindsight, then each corrected model in real time
+only, so it takes about as long as the leakage-gap experiment plus the corrected runs. Gradient
+boosting dominates; use `--models seasonal_naive,ets` for a quick look.
+
+Written to `--out`: `report.md`, `recovery.csv` (every estimate), `variant_comparisons.csv`,
+`leakage_gap.csv` (the base models' gap on the same origins), `factors.csv` (the correction
+estimated at every origin), `scores.csv` and `manifest.json`.
+
+Reading it:
+
+- **Improvement** is the mean WIS saved per forecast by the correction, in real time. Positive is
+  better. **Recovery** is the improvement divided by what hindsight data would have saved. It
+  can be above 100% or negative, and is only computed for models whose own leakage gap interval
+  excludes zero.
+- Compare `backfill` with `backfill-placebo`: if the placebo does as well, the benefit is not
+  coming from knowing which values are provisional.
+- The correction changes the values the model sees, not its prediction intervals.

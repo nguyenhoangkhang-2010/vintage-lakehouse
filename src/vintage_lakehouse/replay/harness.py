@@ -61,7 +61,8 @@ class ReplayConfig:
 
     ``horizons`` count periods ahead of the latest period reported at the origin: horizon 1 is
     the period after it. ``evaluation_time`` is ``T_eval`` and must not be before the last
-    origin.
+    origin. ``modes`` restricts the replay to real time or hindsight only, for forecasters (such
+    as a backfill correction) that only make sense in one of them; the default is both.
     """
 
     series_id: str
@@ -70,6 +71,7 @@ class ReplayConfig:
     evaluation_time: datetime
     step: timedelta = timedelta(days=7)
     min_history: int = 1
+    modes: Sequence[Mode] = (Mode.REALTIME, Mode.HINDSIGHT)
 
     def __post_init__(self) -> None:
         if not self.series_id.strip():
@@ -78,6 +80,10 @@ class ReplayConfig:
             raise ValueError("step must be positive")
         if self.min_history < 1:
             raise ValueError("min_history must be at least 1")
+        modes = tuple(mode for mode in Mode if mode in set(self.modes))
+        if not modes:
+            raise ValueError("modes must contain at least one of realtime and hindsight")
+        object.__setattr__(self, "modes", modes)
 
         horizons = sorted(set(self.horizons))
         if not horizons or horizons[0] < 1:
@@ -162,7 +168,8 @@ def run_replay(
             Mode.HINDSIGHT: tuple(o for o in final if o.event_time <= latest),
         }
         for forecaster in forecasters:
-            for mode, history in histories.items():
+            for mode in config.modes:
+                history = histories[mode]
                 predicted = forecaster.forecast(history, targets)
                 for horizon, target in scorable:
                     rows.append(

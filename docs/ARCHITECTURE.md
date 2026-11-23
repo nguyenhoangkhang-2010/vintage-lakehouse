@@ -27,8 +27,8 @@ flowchart LR
 | `ingestion` | Source clients, raw-response archive, revision detection, lineage log |
 | `replay` | Real-time and hindsight runs, scoring (WIS, error, coverage), leakage gap |
 | `forecast` | Baseline forecasters (seasonal naive, ETS, gradient boosting), see [BASELINES.md](BASELINES.md) |
-| `experiment` | The leakage-gap experiment: runner, block-bootstrap statistics, report files, see [EXPERIMENT.md](EXPERIMENT.md) |
-| `backfill` | Model that predicts how provisional values will be revised |
+| `experiment` | The leakage-gap and backfill-recovery experiments: runners, block-bootstrap statistics, report files, see [EXPERIMENT.md](EXPERIMENT.md) |
+| `backfill` | Vintage table, the median-revision-by-age correction, and a wrapper that corrects any forecaster's history (ADR 0010) |
 | `audit` | Trust report per dataset and a linter that flags look-ahead in user pipelines |
 | `api` | Read-only HTTP API over `as_of` queries |
 

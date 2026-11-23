@@ -325,3 +325,38 @@ def test_forecasters_cannot_alter_the_history_they_are_given() -> None:
             return {t: {0.25: 9.0, 0.5: 10.0, 0.75: 11.0} for t in targets}
 
     run_replay(make_store(), [Mutating()], config(origins=[origin(2)]))
+
+
+# --- restricting a replay to some modes --------------------------------------------------
+
+
+def test_a_realtime_only_replay_gives_the_same_realtime_rows_and_no_hindsight_rows() -> None:
+    both = run_replay(make_store(), [LastValue()], config())
+    realtime_only = run_replay(make_store(), [LastValue()], config(modes=[Mode.REALTIME]))
+    assert {r.mode for r in realtime_only.rows} == {Mode.REALTIME}
+    assert realtime_only.rows == [r for r in both.rows if r.mode is Mode.REALTIME]
+
+
+def test_a_hindsight_only_replay_is_possible_too() -> None:
+    result = run_replay(make_store(), [LastValue()], config(modes=[Mode.HINDSIGHT]))
+    assert result.rows
+    assert {r.mode for r in result.rows} == {Mode.HINDSIGHT}
+
+
+def test_forecasters_are_not_called_for_modes_that_are_not_requested() -> None:
+    forecaster = LastValue()
+    result = run_replay(make_store(), [forecaster], config(modes=[Mode.REALTIME]))
+    assert len(forecaster.calls) == len({r.origin for r in result.rows})
+
+
+def test_both_modes_are_the_default_and_modes_are_deduplicated() -> None:
+    assert config().modes == (Mode.REALTIME, Mode.HINDSIGHT)
+    assert config(modes=[Mode.HINDSIGHT, Mode.REALTIME, Mode.REALTIME]).modes == (
+        Mode.REALTIME,
+        Mode.HINDSIGHT,
+    )
+
+
+def test_at_least_one_mode_is_required() -> None:
+    with pytest.raises(ValueError, match="modes"):
+        config(modes=[])

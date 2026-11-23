@@ -77,3 +77,19 @@ new limitation, and keep entries factual.
   records relative file locations and only opens from the folder where it was created. It can be
   rebuilt from the raw archive without a download (`data/README.md`). New warehouses are not
   affected.
+- **The backfill correction is deliberately simple** (ADR 0010). It is the median revision of
+  the last four reported weeks by age, fixed in advance and not tuned. It cannot recover any
+  part of the gap that comes from older values, from revisions that depend on the level or the
+  season, or from a change in how the source revises (a bias that shifts over time is estimated
+  from the past and applied to the present).
+- **The correction does not widen the forecast intervals.** It changes the values the model
+  sees, so the uncertainty of the correction itself is not in the prediction intervals.
+- **The correction needs the vintages of past periods**, not only the latest value of each, so
+  it cannot be applied to data that was stored without its revision history.
+- **Recovery is only defined where there is a gap.** The share of the gap recovered is computed
+  for models whose own gap interval excludes zero; for the others only the improvement is given.
+  A ratio of two noisy quantities, it can exceed 100% or be negative.
+- **The revision pattern of FluView is not stationary**, so the correction fixed in advance
+  (an estimate over all settled past weeks) was wrong in the early evaluation years and did not
+  recover the gap (`docs/RESULTS.md`). Whether a recent-window estimate would is untested, and
+  was suggested by the results, so it needs its own plan or fresh data.
