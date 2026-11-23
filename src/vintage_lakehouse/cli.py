@@ -126,7 +126,7 @@ def _run_ingest(args: argparse.Namespace) -> int:
         print("--first-year must not be after --last-year", file=sys.stderr)
         return 2
 
-    data_dir = args.data_dir or Settings.from_env().data_dir
+    data_dir = (args.data_dir or Settings.from_env().data_dir).resolve()
     source = delphi.FluViewSource(region=args.region)
     archive = RawArchive(data_dir / "raw", f"{delphi.SOURCE_ID}/{args.region}")
     lineage = LineageLog(data_dir / "lineage" / "ingestion.jsonl")

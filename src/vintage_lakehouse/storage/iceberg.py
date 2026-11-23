@@ -119,6 +119,10 @@ def _to_observations(table: pa.Table) -> list[Observation]:
     ]
 
 
+class WarehouseLocationError(RuntimeError):
+    """The files of a warehouse could not be found where its catalog says they are."""
+
+
 class IcebergStore:
     """An ``AsOfStore`` backed by an Iceberg table."""
 
@@ -145,16 +149,32 @@ class IcebergStore:
         """Open (or create) a store in a local directory, using a SQLite catalog.
 
         The warehouse is passed to PyIceberg as a plain path. A ``file:///C:/...`` URI is
-        misread on Windows.
+        misread on Windows. The path is made absolute first: Iceberg writes the locations of its
+        files into the catalog, and relative locations would only resolve from the folder where
+        the warehouse was created.
+
+        Raises ``WarehouseLocationError`` if the catalog points at files that are not there,
+        which is what a warehouse built by an older version with a relative path does when it is
+        opened from another folder.
         """
-        root = Path(warehouse)
+        root = Path(warehouse).expanduser().resolve()
         root.mkdir(parents=True, exist_ok=True)
         catalog = SqlCatalog(
             "local",
             uri=f"sqlite:///{(root / 'catalog.db').as_posix()}",
             warehouse=str(root),
         )
-        return cls(catalog, identifier=identifier)
+        try:
+            return cls(catalog, identifier=identifier)
+        except FileNotFoundError as exc:
+            catalog.engine.dispose()
+            raise WarehouseLocationError(
+                f"the files of the warehouse at {root} could not be found. If it was built by an "
+                "older version with a relative path, it points at its files relative to the "
+                "folder where it was created and can only be opened from there. Run the command "
+                f"from that folder, or rebuild the warehouse from the raw archive: delete {root} "
+                "and run `vintage-lakehouse ingest delphi-fluview --from-archive`."
+            ) from exc
 
     # --- reading --------------------------------------------------------------------
 
@@ -176,7 +196,9 @@ class IcebergStore:
         connection = duckdb.connect()
         try:
             connection.register("versions", scanned)
-            latest = connection.execute(_AS_OF_SQL, [series_id, _micros(moment)]).to_arrow_table()
+            latest = connection.sql(
+                _AS_OF_SQL, params=[series_id, _micros(moment)]
+            ).to_arrow_table()
         finally:
             connection.close()
         return _to_observations(latest)
