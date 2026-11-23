@@ -66,6 +66,22 @@ mypy
 vintage-lakehouse info
 ```
 
+## Loading data
+
+```text
+vintage-lakehouse ingest delphi-fluview --first-year 2010 --last-issue 202638
+```
+
+This pulls every published version of the national weighted ILI from Delphi FluView, one request
+per year, into a local Iceberg warehouse under `data/`. It saves each raw response and writes one
+lineage record per request. Running it again is safe: versions that are already stored are
+skipped. For each request it prints the new periods, the revisions (value changed from the
+previous version) and the largest revision. `--from-archive` replays the saved responses
+without any network access.
+
+The legacy Delphi API is being phased out ([ADR 0006](docs/adr/0006-archive-raw-responses.md)),
+so run a full pull soon and keep `data/raw`.
+
 ## Using a store
 
 ```python

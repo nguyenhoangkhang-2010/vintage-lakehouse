@@ -24,7 +24,20 @@ new limitation, and keep entries factual.
   diseases, countries or domains without testing them. Not Vietnamese data.
 - **Only early revisions were sampled.** The gate looked at the first 20 weekly issues of each
   sampled week. Later revisions are not yet characterised.
-- **Full pull needs a free API key (likely).** Anonymous access is rate-limited according to the
-  Delphi documentation. This was not tested for a full historical pull.
+- **Anonymous access worked for a full national pull** (17 requests, no throttling), but it is
+  documented as rate-limited. Pulls for many regions were not tested and may need a free key.
 - **Licence not yet verified** for redistributing derived results (see `DATA_SOURCES.md`).
 - **ALFRED / FRED not evaluated.** It needs an API key registered by the project owner.
+- **The legacy Delphi API is being retired** (ADR 0006). Only the national region was pulled,
+  and whether the V5 API offers the same history is unchecked. Reproducibility rests on the
+  raw archive, which is not committed to the repository.
+- **Same-day releases.** Date-only stamps give two issues released on the same day the same
+  knowledge_time. Identical values are stored once (this happened once in the national series).
+  Different values would stop ingestion with a conflict, and a rule for that case is not yet
+  decided.
+- **Ingestion reads one period at a time from the store.** Revision detection calls
+  `revisions()` for each event_time in a chunk. That is fine for a year of weekly data (about 50
+  calls), but slow for chunks with thousands of periods; a bulk read would need a contract
+  change.
+- **Many small commits.** Each chunk is one Iceberg commit, so a 17-year pull creates 17 small
+  data files; there is no compaction yet.

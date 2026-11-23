@@ -1,6 +1,7 @@
 # ADR 0004: Primary dataset is Delphi FluView
 
-- Status: Accepted (pending the licence check in `docs/DATA_SOURCES.md`)
+- Status: Accepted (pending the licence check in `docs/DATA_SOURCES.md`). The availability risk
+  of the legacy API is handled in [ADR 0006](0006-archive-raw-responses.md).
 
 ## Context
 

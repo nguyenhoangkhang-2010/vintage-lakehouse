@@ -13,6 +13,22 @@ def _week1_start(year: int) -> date:
     return jan4 - timedelta(days=(jan4.weekday() + 1) % 7)
 
 
+def weeks_in_year(year: int) -> int:
+    """Return how many MMWR weeks ``year`` has (52 or 53)."""
+    return (_week1_start(year + 1) - _week1_start(year)).days // 7
+
+
+def date_to_epiweek(day: date) -> int:
+    """Return the epiweek (for example ``202301``) that contains ``day``."""
+    year = day.year
+    if day >= _week1_start(year + 1):
+        year += 1
+    elif day < _week1_start(year):
+        year -= 1
+    week = (day - _week1_start(year)).days // 7 + 1
+    return year * 100 + week
+
+
 def epiweek_to_date(epiweek: int) -> date:
     """Return the Sunday that starts ``epiweek`` (an integer such as ``202301``).
 

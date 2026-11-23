@@ -26,6 +26,14 @@ All notable changes are documented here. The format follows
 - Contract tests now also check round-tripping of microsecond timestamps, `ingest_time`,
   exact floats and Unicode text, and the property tests can be tuned per store.
 
+- Ingestion pipeline: revision detection (new period, revised, unchanged), idempotent
+  re-ingestion, atomic chunks, a SHA-256 raw-response archive with offline replay, and a
+  JSON-lines lineage log.
+- `FluViewSource` (Delphi FluView, one request per year) and the `vintage-lakehouse ingest`
+  command with `--from-archive`.
+- MMWR helpers `weeks_in_year` and `date_to_epiweek`.
+- ADR 0006: archive raw responses because the legacy Delphi API is being phased out.
+
 ### Changed
 - ADR 0002 is accepted and now records the validation rules and the date-only convention.
 - ADR 0003 is accepted with the verification results, findings and known limits.
