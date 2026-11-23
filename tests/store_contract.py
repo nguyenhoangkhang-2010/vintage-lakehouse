@@ -2,11 +2,13 @@
 
 To test a new store, subclass ``StoreContract`` in a ``test_*.py`` module and implement
 ``make_store``. The in-memory reference store and the Iceberg-backed store run the same tests.
+A store that is slow to create can lower ``property_examples``.
 """
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+import math
+from collections.abc import Callable, Sequence
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
 
@@ -103,6 +105,9 @@ def oracle(observations: Sequence[Observation], series_id: str, at: datetime) ->
 class StoreContract:
     """Behaviour every ``AsOfStore`` must have. Subclasses provide ``make_store``."""
 
+    #: How many generated examples each property test tries. Slow stores can lower it.
+    property_examples = 100
+
     def make_store(self) -> AsOfStore:
         raise NotImplementedError
 
@@ -110,6 +115,17 @@ class StoreContract:
         store = self.make_store()
         store.append(three_versions())
         return store
+
+    def prop(self, **strategies: Any) -> Callable[[Callable[..., None]], Callable[[], None]]:
+        """Turn a check function into a Hypothesis test using ``property_examples``."""
+
+        def decorate(check: Callable[..., None]) -> Callable[[], None]:
+            runner: Callable[[], None] = settings(
+                deadline=None, max_examples=self.property_examples
+            )(given(**strategies)(check))
+            return runner
+
+        return decorate
 
     # --- as_of ---------------------------------------------------------------------
 
@@ -187,6 +203,11 @@ class StoreContract:
 
     # --- append --------------------------------------------------------------------
 
+    def test_appending_nothing_is_fine(self) -> None:
+        store = self.make_store()
+        assert store.append([]) == 0
+        assert store.as_of(SERIES, FIRST) == []
+
     def test_append_returns_the_number_of_new_versions(self) -> None:
         store = self.make_store()
         assert store.append(three_versions()) == 3
@@ -247,81 +268,108 @@ class StoreContract:
         assert len(store.as_of(SERIES, THIRD)) == 1
         assert len(store.revisions(SERIES, EVENT)) == 3
 
+    # --- fidelity: what goes in comes back identical -------------------------------
+
+    def test_ingest_time_and_microseconds_are_preserved(self) -> None:
+        known = datetime(2023, 1, 14, 8, 30, 15, 123456, tzinfo=UTC)
+        stored = observation(known=known, ingest=datetime(2024, 5, 1, 1, 2, 3, 654321, tzinfo=UTC))
+        store = self.make_store()
+        store.append([stored])
+        assert store.revisions(SERIES, EVENT) == [stored]
+        assert store.as_of(SERIES, known) == [stored]
+        assert store.as_of(SERIES, known - timedelta(microseconds=1)) == []
+
+    @pytest.mark.parametrize("value", [0.1, -2.5e-10, 1e308, 5e-324, 0.0, -0.0])
+    def test_float_values_round_trip_exactly(self, value: float) -> None:
+        store = self.make_store()
+        store.append([observation(value=value)])
+        [got] = store.revisions(SERIES, EVENT)
+        assert got.value == value
+        assert math.copysign(1.0, got.value) == math.copysign(1.0, value)
+
+    def test_unicode_text_round_trips(self) -> None:
+        stored = observation(series="Hà Nội/sốt xuất huyết", source="Bộ Y tế")
+        store = self.make_store()
+        store.append([stored])
+        assert store.as_of("Hà Nội/sốt xuất huyết", FIRST) == [stored]
+
     # --- properties ----------------------------------------------------------------
 
-    @settings(deadline=None)
-    @given(specs=version_specs, hours=query_hours, series_id=st.sampled_from(SERIES_IDS))
-    def test_as_of_matches_a_brute_force_oracle(
-        self, specs: list[Spec], hours: int, series_id: str
-    ) -> None:
-        observations = build(specs)
-        store = self.make_store()
-        store.append(observations)
-        at = at_hours(hours)
-        assert store.as_of(series_id, at) == oracle(observations, series_id, at)
+    def test_as_of_matches_a_brute_force_oracle(self) -> None:
+        @self.prop(specs=version_specs, hours=query_hours, series_id=st.sampled_from(SERIES_IDS))
+        def check(specs: list[Spec], hours: int, series_id: str) -> None:
+            observations = build(specs)
+            store = self.make_store()
+            store.append(observations)
+            at = at_hours(hours)
+            assert store.as_of(series_id, at) == oracle(observations, series_id, at)
 
-    @settings(deadline=None)
-    @given(specs=version_specs, hours=query_hours, series_id=st.sampled_from(SERIES_IDS))
-    def test_as_of_never_returns_knowledge_from_the_future(
-        self, specs: list[Spec], hours: int, series_id: str
-    ) -> None:
-        store = self.make_store()
-        store.append(build(specs))
-        at = at_hours(hours)
-        result = store.as_of(series_id, at)
-        assert all(item.knowledge_time <= at for item in result)
-        event_times = [item.event_time for item in result]
-        assert event_times == sorted(set(event_times))
+        check()
 
-    @settings(deadline=None)
-    @given(
-        specs=version_specs,
-        first=query_hours,
-        second=query_hours,
-        series_id=st.sampled_from(SERIES_IDS),
-    )
-    def test_knowledge_only_grows_over_time(
-        self, specs: list[Spec], first: int, second: int, series_id: str
-    ) -> None:
-        store = self.make_store()
-        store.append(build(specs))
-        early, late = sorted((first, second))
-        before = {o.event_time: o for o in store.as_of(series_id, at_hours(early))}
-        after = {o.event_time: o for o in store.as_of(series_id, at_hours(late))}
-        assert before.keys() <= after.keys()
-        assert all(after[key].knowledge_time >= before[key].knowledge_time for key in before)
+    def test_as_of_never_returns_knowledge_from_the_future(self) -> None:
+        @self.prop(specs=version_specs, hours=query_hours, series_id=st.sampled_from(SERIES_IDS))
+        def check(specs: list[Spec], hours: int, series_id: str) -> None:
+            store = self.make_store()
+            store.append(build(specs))
+            at = at_hours(hours)
+            result = store.as_of(series_id, at)
+            assert all(item.knowledge_time <= at for item in result)
+            event_times = [item.event_time for item in result]
+            assert event_times == sorted(set(event_times))
 
-    @settings(deadline=None)
-    @given(data=st.data(), specs=version_specs, hours=query_hours)
-    def test_insertion_order_does_not_matter(
-        self, data: st.DataObject, specs: list[Spec], hours: int
-    ) -> None:
-        observations = build(specs)
-        shuffled = data.draw(st.permutations(observations))
-        in_order, out_of_order = self.make_store(), self.make_store()
-        in_order.append(observations)
-        out_of_order.append(shuffled)
-        at = at_hours(hours)
-        for series_id in SERIES_IDS:
-            assert in_order.as_of(series_id, at) == out_of_order.as_of(series_id, at)
-            for offset in range(5):
-                event = BASE.date() + timedelta(days=offset)
-                assert in_order.revisions(series_id, event) == out_of_order.revisions(
-                    series_id, event
-                )
+        check()
 
-    @settings(deadline=None)
-    @given(specs=version_specs, split=st.integers(min_value=0, max_value=40), hours=query_hours)
-    def test_splitting_or_repeating_appends_changes_nothing(
-        self, specs: list[Spec], split: int, hours: int
-    ) -> None:
-        observations = build(specs)
-        cut = min(split, len(observations))
-        whole, pieces = self.make_store(), self.make_store()
-        assert whole.append(observations) == len(observations)
-        pieces.append(observations[:cut])
-        pieces.append(observations[cut:])
-        assert pieces.append(observations) == 0
-        at = at_hours(hours)
-        for series_id in SERIES_IDS:
-            assert whole.as_of(series_id, at) == pieces.as_of(series_id, at)
+    def test_knowledge_only_grows_over_time(self) -> None:
+        @self.prop(
+            specs=version_specs,
+            first=query_hours,
+            second=query_hours,
+            series_id=st.sampled_from(SERIES_IDS),
+        )
+        def check(specs: list[Spec], first: int, second: int, series_id: str) -> None:
+            store = self.make_store()
+            store.append(build(specs))
+            early, late = sorted((first, second))
+            before = {o.event_time: o for o in store.as_of(series_id, at_hours(early))}
+            after = {o.event_time: o for o in store.as_of(series_id, at_hours(late))}
+            assert before.keys() <= after.keys()
+            assert all(after[key].knowledge_time >= before[key].knowledge_time for key in before)
+
+        check()
+
+    def test_insertion_order_does_not_matter(self) -> None:
+        @self.prop(data=st.data(), specs=version_specs, hours=query_hours)
+        def check(data: st.DataObject, specs: list[Spec], hours: int) -> None:
+            observations = build(specs)
+            shuffled = data.draw(st.permutations(observations))
+            in_order, out_of_order = self.make_store(), self.make_store()
+            in_order.append(observations)
+            out_of_order.append(shuffled)
+            at = at_hours(hours)
+            for series_id in SERIES_IDS:
+                assert in_order.as_of(series_id, at) == out_of_order.as_of(series_id, at)
+                for offset in range(5):
+                    event = BASE.date() + timedelta(days=offset)
+                    assert in_order.revisions(series_id, event) == out_of_order.revisions(
+                        series_id, event
+                    )
+
+        check()
+
+    def test_splitting_or_repeating_appends_changes_nothing(self) -> None:
+        @self.prop(
+            specs=version_specs, split=st.integers(min_value=0, max_value=40), hours=query_hours
+        )
+        def check(specs: list[Spec], split: int, hours: int) -> None:
+            observations = build(specs)
+            cut = min(split, len(observations))
+            whole, pieces = self.make_store(), self.make_store()
+            assert whole.append(observations) == len(observations)
+            pieces.append(observations[:cut])
+            pieces.append(observations[cut:])
+            assert pieces.append(observations) == 0
+            at = at_hours(hours)
+            for series_id in SERIES_IDS:
+                assert whole.as_of(series_id, at) == pieces.as_of(series_id, at)
+
+        check()
