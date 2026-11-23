@@ -11,6 +11,7 @@ from pathlib import Path
 
 from vintage_lakehouse import __version__
 from vintage_lakehouse.config import Settings
+from vintage_lakehouse.experiment import command as experiment_command
 from vintage_lakehouse.ingestion import delphi
 from vintage_lakehouse.ingestion.archive import RawArchive
 from vintage_lakehouse.ingestion.epiweek import date_to_epiweek
@@ -59,6 +60,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Replay the saved raw responses instead of using the network.",
     )
+
+    experiment = subparsers.add_parser("experiment", help="Run an experiment on the stored data.")
+    experiments = experiment.add_subparsers(dest="experiment", required=True)
+    leakage_gap = experiments.add_parser(
+        "leakage-gap",
+        help="Measure how much hindsight evaluation overstates real-time forecast skill.",
+    )
+    experiment_command.add_arguments(leakage_gap)
     return parser
 
 
@@ -164,6 +173,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _run_gate()
     if args.command == "ingest":
         return _run_ingest(args)
+    if args.command == "experiment":
+        return experiment_command.run(args)
     parser.print_help()
     return 0
 

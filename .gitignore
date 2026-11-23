@@ -25,6 +25,7 @@ data/*
 !data/.gitkeep
 !data/README.md
 warehouse/
+results/
 *.duckdb
 *.duckdb.wal
 *.parquet
