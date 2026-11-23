@@ -3,8 +3,10 @@
 > A point-in-time (bitemporal) lakehouse for data that gets revised, plus a "time machine"
 > that measures how much forecast accuracy is inflated by evaluating in hindsight.
 
-**Status: skeleton. There are no results yet.** The table below is filled in by the branches
-listed in [docs/ROADMAP.md](docs/ROADMAP.md); nothing here is claimed until it is measured.
+**Status: early development. There are no experimental results yet.** The time model, the
+store contract, an in-memory store and an Iceberg-backed store exist. The results table below is
+filled in by the branches listed in [docs/ROADMAP.md](docs/ROADMAP.md); nothing is claimed
+until it is measured.
 
 ## Why this exists
 
@@ -63,6 +65,31 @@ ruff format --check .
 mypy
 vintage-lakehouse info
 ```
+
+## Using a store
+
+```python
+from datetime import date, datetime, timezone
+
+from vintage_lakehouse.storage import InMemoryStore, Observation
+
+store = InMemoryStore()  # or IcebergStore.local("warehouse") from vintage_lakehouse.storage.iceberg
+store.append(
+    [
+        Observation(
+            "fluview", date(2023, 1, 1), datetime(2023, 1, 14, tzinfo=timezone.utc), 4.00, "demo"
+        ),
+        Observation(
+            "fluview", date(2023, 1, 1), datetime(2023, 1, 21, tzinfo=timezone.utc), 4.10, "demo"
+        ),
+    ]
+)
+store.as_of("fluview", datetime(2023, 1, 15, tzinfo=timezone.utc))  # -> the 4.00 version
+```
+
+The Iceberg store needs the `iceberg` extra (`pip install -e ".[iceberg]"`, already part of
+`.[dev]`). Both stores pass the same contract tests, see
+[ADR 0005](docs/adr/0005-store-contract-semantics.md).
 
 ## Repository layout
 

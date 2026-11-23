@@ -21,5 +21,12 @@ All notable changes are documented here. The format follows
 - Reusable store contract tests (`tests/store_contract.py`) including property-based tests
   against a brute-force oracle. ADR 0005 records the contract semantics.
 
+- `IcebergStore`: Iceberg table (PyIceberg, local SQLite catalog) queried with DuckDB, passing
+  the same contract tests as the in-memory store. New optional `iceberg` extra.
+- Contract tests now also check round-tripping of microsecond timestamps, `ingest_time`,
+  exact floats and Unicode text, and the property tests can be tuned per store.
+
 ### Changed
 - ADR 0002 is accepted and now records the validation rules and the date-only convention.
+- ADR 0003 is accepted with the verification results, findings and known limits.
+- `dev` extra now includes the `iceberg` extra.
