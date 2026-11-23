@@ -41,3 +41,10 @@ new limitation, and keep entries factual.
   change.
 - **Many small commits.** Each chunk is one Iceberg commit, so a 17-year pull creates 17 small
   data files; there is no compaction yet.
+- **Replay cost.** The harness calls `as_of` once per origin. On the Iceberg store with the
+  national series that is about 70 ms per origin (548 weekly origins took about 37 seconds).
+  Many series or many more origins will need a bulk read.
+- **No uncertainty on the leakage gap yet.** The harness gives point estimates. Confidence
+  intervals and the sensitivity to the evaluation time `T_eval` come with the experiment.
+- **Origins and the step are chosen by the caller.** The harness assumes evenly spaced periods
+  (7 days by default) and does not detect gaps in a series.

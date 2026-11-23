@@ -15,19 +15,29 @@
 - **Hindsight data**: the values as known at a fixed, later evaluation time `T_eval`
   (after most revisions have settled).
 - **Forecast origin**: a time `t` at which a forecast is issued.
+- **Latest reported period** `L(t)`: the most recent event_time that has any version known at
+  `t`. Data is reported with a delay, so this is usually behind the calendar.
+- **Horizon** `h`: the target is the period `h` steps after `L(t)`. Horizon 1 is the period
+  right after the latest reported one. One step is one reporting period (7 days for weekly data).
 
 ## Evaluation protocol
 
-For every forecast origin `t` in the evaluation window and every model:
+For every forecast origin `t` in the evaluation window and every model (specified precisely in
+[ADR 0007](adr/0007-replay-protocol.md)):
 
-1. **Real-time run**: fit or compute features using only `as_of(t)`. Produce a forecast.
-2. **Hindsight run**: same model, same origin, but fit or compute features using
-   `as_of(T_eval)` truncated to event_times up to `t`. Produce a forecast.
-3. Score both forecasts against the same truth, taken from `as_of(T_eval)`. Using the same
-   truth for both runs isolates the effect of the information available at fit time.
+1. **Real-time run**: the model sees `as_of(t)`, one value per period. It produces quantile
+   forecasts for the targets `L(t) + h` for each horizon `h`.
+2. **Hindsight run**: same model, same origin, same targets, but the model sees the *same
+   periods* (those up to `L(t)`) with their values as known at `T_eval`, that is `as_of(T_eval)`
+   restricted to event_times up to `L(t)`. It never sees periods the real-time run could not
+   see, only their settled values.
+3. Score both forecasts against the same truth: the value of each target at `T_eval`. Using the
+   same truth for both runs isolates the effect of the information available at fit time.
+   Targets with no value at `T_eval` are not scored, in either run.
 
-**Leakage gap** = relative difference in score between the hindsight run and the real-time run
-(for example the percentage by which weighted interval score improves in hindsight).
+**Leakage gap** = `(WIS_realtime - WIS_hindsight) / WIS_realtime`, using mean WIS over matched
+pairs (same model, origin and horizon in both runs). A positive gap means that evaluating on
+revised data makes the model look better than it would have been in real time.
 
 ## Hypotheses (to test, not to assume)
 

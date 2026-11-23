@@ -34,6 +34,11 @@ All notable changes are documented here. The format follows
 - MMWR helpers `weeks_in_year` and `date_to_epiweek`.
 - ADR 0006: archive raw responses because the legacy Delphi API is being phased out.
 
+- Replay harness: `run_replay` forecasts every origin in real time (`as_of(origin)`) and in
+  hindsight (`as_of(T_eval)` for the same periods), scores both against the same truth,
+  and `leakage_gap` / `summarize` aggregate the result. Scoring: weighted interval score,
+  absolute error and interval coverage. ADR 0007 records the protocol.
+
 ### Changed
 - ADR 0002 is accepted and now records the validation rules and the date-only convention.
 - ADR 0003 is accepted with the verification results, findings and known limits.
