@@ -130,6 +130,7 @@ data/          local data (git-ignored)
 - [Roadmap and branch plan](docs/ROADMAP.md)
 - [Git workflow](docs/GIT_WORKFLOW.md) and [Contributing](CONTRIBUTING.md)
 - [Data sources and week-0 gate](docs/DATA_SOURCES.md)
+- [Baseline forecasters](docs/BASELINES.md)
 - [Limitations](docs/LIMITATIONS.md)
 
 ## Scope

@@ -39,6 +39,11 @@ All notable changes are documented here. The format follows
   and `leakage_gap` / `summarize` aggregate the result. Scoring: weighted interval score,
   absolute error and interval coverage. ADR 0007 records the protocol.
 
+- Baseline forecasters: `SeasonalNaive` (no extra dependencies), `ETSForecaster` and
+  `GradientBoostingForecaster` (optional `baselines` extra), sharing quantile levels, gap
+  handling, non-crossing quantiles and an optional lower bound. Documented sanity tests for each
+  (`docs/BASELINES.md`) and ADR 0008.
+
 ### Changed
 - ADR 0002 is accepted and now records the validation rules and the date-only convention.
 - ADR 0003 is accepted with the verification results, findings and known limits.

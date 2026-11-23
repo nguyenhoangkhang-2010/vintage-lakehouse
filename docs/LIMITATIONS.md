@@ -47,4 +47,13 @@ new limitation, and keep entries factual.
 - **No uncertainty on the leakage gap yet.** The harness gives point estimates. Confidence
   intervals and the sensitivity to the evaluation time `T_eval` come with the experiment.
 - **Origins and the step are chosen by the caller.** The harness assumes evenly spaced periods
-  (7 days by default) and does not detect gaps in a series.
+  (7 days by default) and does not detect gaps in a series. The baselines forward-fill a
+  missing period.
+- **The baselines are simple and untuned.** Conclusions apply to these models, not to
+  forecasting methods in general (ADR 0008). ETS has no seasonal component, and its normal
+  prediction intervals are an approximation.
+- **Gradient boosting is slow.** About 4.4 s per origin on the national FluView series (both
+  modes), against 0.2 s for the other baselines, so a full replay over every weekly origin
+  would take about 40 minutes and needs thinning (one run on one machine).
+- **Baselines need a minimum history** (60 to 100 periods). Shorter origins must be skipped via
+  `ReplayConfig.min_history`.
