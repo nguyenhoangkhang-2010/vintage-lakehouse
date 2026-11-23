@@ -3,10 +3,9 @@
 > A point-in-time (bitemporal) lakehouse for data that gets revised, plus a "time machine"
 > that measures how much forecast accuracy is inflated by evaluating in hindsight.
 
-**Status: early development. There are no experimental results yet.** The time model, the
-store contract, an in-memory store and an Iceberg-backed store exist. The results table below is
-filled in by the branches listed in [docs/ROADMAP.md](docs/ROADMAP.md); nothing is claimed
-until it is measured.
+**Status: early development.** The data layer, the replay harness, three baseline forecasters
+and the first experiment exist. The results table below is filled in by the branches listed in
+[docs/ROADMAP.md](docs/ROADMAP.md); a row says "not measured yet" until it is measured.
 
 ## Why this exists
 
@@ -40,9 +39,14 @@ Architecture and data flow: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Results
 
+US national weighted ILI (Delphi FluView), 137 origins from 2015 to 2025, horizons 1 to 4 weeks.
+Full tables, caveats and how to reproduce: [docs/RESULTS.md](docs/RESULTS.md).
+
 | Metric | Value | Dataset | Branch |
 |--------|-------|---------|--------|
-| Leakage gap (relative WIS) | not measured yet | – | `feature/leakage-gap-experiment` |
+| Leakage gap, seasonal naive (relative WIS, 95% CI) | 0.2% [-0.2%, 0.6%] | FluView national wILI | `feature/leakage-gap-experiment` |
+| Leakage gap, ETS | 6.4% [1.3%, 10.0%] | FluView national wILI | `feature/leakage-gap-experiment` |
+| Leakage gap, gradient boosting | 2.6% [0.7%, 4.9%] | FluView national wILI | `feature/leakage-gap-experiment` |
 | Gap recovered by backfill model | not measured yet | – | `feature/backfill-model` |
 | `as_of` query latency vs table size | not measured yet | – | `feature/benchmarks` |
 | Versioning storage overhead vs full snapshots | not measured yet | – | `feature/benchmarks` |
@@ -115,6 +119,7 @@ src/vintage_lakehouse/
   ingestion/   data sources and revision detection
   replay/      real-time replay and hindsight evaluation
   forecast/    baseline forecasters
+  experiment/  the leakage-gap experiment (runner, statistics, report)
   backfill/    revision (backfill) model
   audit/       trust report and leakage linter
   api/         read-only HTTP API
@@ -131,6 +136,8 @@ data/          local data (git-ignored)
 - [Git workflow](docs/GIT_WORKFLOW.md) and [Contributing](CONTRIBUTING.md)
 - [Data sources and week-0 gate](docs/DATA_SOURCES.md)
 - [Baseline forecasters](docs/BASELINES.md)
+- [Results](docs/RESULTS.md)
+- [Running the experiment](docs/EXPERIMENT.md) and its [design](docs/adr/0009-leakage-gap-experiment.md)
 - [Limitations](docs/LIMITATIONS.md)
 
 ## Scope

@@ -44,8 +44,24 @@ new limitation, and keep entries factual.
 - **Replay cost.** The harness calls `as_of` once per origin. On the Iceberg store with the
   national series that is about 70 ms per origin (548 weekly origins took about 37 seconds).
   Many series or many more origins will need a bulk read.
-- **No uncertainty on the leakage gap yet.** The harness gives point estimates. Confidence
-  intervals and the sensitivity to the evaluation time `T_eval` come with the experiment.
+- **The experiment's intervals may still be somewhat too narrow.** They come from a
+  moving-block bootstrap with 12-week blocks, but a flu season is about 30 weeks long, so
+  dependence beyond a block is not preserved (ADR 0009). They cover the choice of origins, not
+  model misspecification or the choice of `T_eval`; the sensitivity table covers the latter.
+- **One series, three simple models, origins every 4 weeks.** The experiment says nothing about
+  other series, diseases or countries, nor about forecasting methods in general. The 4-week
+  cadence was chosen to keep gradient boosting affordable.
+- **The `T_eval` grid is late.** All four evaluation times are at least 13 weeks after the last
+  origin, and the gap did not change between them because influenza data settles quickly. The
+  experiment therefore cannot say what a hindsight time that is early relative to each origin
+  would do. That needs an evaluation time defined relative to each origin.
+- **The excluded pandemic window is an analyst's choice** (2020-03-01 to 2021-09-30). It is
+  stated and reported next to the unfiltered result, not tuned.
+- **The gap can be negative.** A first release biased low can accidentally pull a naive forecast
+  towards a falling series. The relative gap is unstable when real-time WIS is small, so the
+  absolute degradation is always reported too.
+- **Exploratory analyses have no multiple-comparison correction** (model differences, revision
+  size groups). They are reported with intervals and described, not tested.
 - **Origins and the step are chosen by the caller.** The harness assumes evenly spaced periods
   (7 days by default) and does not detect gaps in a series. The baselines forward-fill a
   missing period.

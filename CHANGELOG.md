@@ -44,6 +44,16 @@ All notable changes are documented here. The format follows
   handling, non-crossing quantiles and an optional lower bound. Documented sanity tests for each
   (`docs/BASELINES.md`) and ADR 0008.
 
+- The leakage-gap experiment: `vintage-lakehouse experiment leakage-gap` replays the baselines
+  at several evaluation times (with real-time forecasts cached), computes the gap per model and
+  horizon with moving-block bootstrap confidence intervals, compares models, analyses
+  sensitivity to `T_eval` and to excluded origins, and relates the gap to the size of recent
+  revisions. Writes a report, CSV files and a manifest (configuration, data identifier,
+  library versions). ADR 0009 fixes the analysis plan; `docs/EXPERIMENT.md` explains running it.
+- First measured results (`docs/RESULTS.md`): on US national weighted ILI, the leakage gap is
+  0.2% for seasonal naive, 6.4% for ETS and 2.6% for gradient boosting, with block-bootstrap
+  intervals.
+
 ### Changed
 - ADR 0002 is accepted and now records the validation rules and the date-only convention.
 - ADR 0003 is accepted with the verification results, findings and known limits.
