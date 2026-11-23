@@ -16,5 +16,10 @@ All notable changes are documented here. The format follows
 - `Observation` bitemporal model with validated, UTC-normalised times, the `ObservationKey`
   version identity, and `knowledge_time_from_date` for date-only publication stamps.
 
+- `AsOfStore` contract (`append`, `as_of`, `revisions`) with `ConflictError`, and the
+  `InMemoryStore` reference implementation.
+- Reusable store contract tests (`tests/store_contract.py`) including property-based tests
+  against a brute-force oracle. ADR 0005 records the contract semantics.
+
 ### Changed
 - ADR 0002 is accepted and now records the validation rules and the date-only convention.
