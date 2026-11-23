@@ -54,6 +54,14 @@ All notable changes are documented here. The format follows
   0.2% for seasonal naive, 6.4% for ETS and 2.6% for gradient boosting, with block-bootstrap
   intervals.
 
+### Fixed
+- A warehouse created with a relative path (the default `--data-dir data`) could only be opened
+  from the folder where it was created, because Iceberg stored relative file locations. The
+  warehouse path is now made absolute, in `IcebergStore.local` and in the `ingest` command. A
+  warehouse built by an older version gives a clear `WarehouseLocationError` with rebuild
+  instructions, and `data/README.md` explains how to rebuild it from the raw archive.
+- The as-of query no longer triggers DuckDB 2's "Arrow output on a DB-API result" warning.
+
 ### Changed
 - ADR 0002 is accepted and now records the validation rules and the date-only convention.
 - ADR 0003 is accepted with the verification results, findings and known limits.

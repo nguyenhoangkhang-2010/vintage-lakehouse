@@ -62,6 +62,10 @@ markers = [
     "slow: long-running tests (benchmarks, large replays)",
     "network: tests that need network access to a data source",
 ]
+filterwarnings = [
+    # DuckDB 2 warns when a DB-API result is converted to Arrow; use con.sql(...) instead.
+    "error:Arrow output on a DB-API result:UserWarning",
+]
 
 [tool.ruff]
 line-length = 100

@@ -47,6 +47,14 @@ Environment: Windows 11, Python 3.10.11, pyiceberg 0.12.0, duckdb 1.5.6, pyarrow
   wrong constructor. They are typed as `Any` in one place, with a comment, and covered by tests.
 - **The knowledge_time predicate is repeated in SQL.** The answer does not depend on the
   pushdown being exact.
+- **Absolute paths.** Iceberg writes the locations of its files into the catalog. A warehouse
+  given as a relative path (the command-line default is `data`) therefore recorded relative
+  locations and could only be opened from the folder where it was created. This was found when
+  a real store was opened from another folder. `IcebergStore.local` now makes the path absolute.
+  A warehouse built before that fix fails to open elsewhere with a `WarehouseLocationError` that
+  says how to rebuild it from the raw archive (no download is needed).
+- **DuckDB 2 and Arrow.** Converting a DB-API result to Arrow warns in DuckDB 2.x. The query uses
+  `connection.sql(..., params=...)` instead, and pytest turns that warning into an error.
 - **No-op appends do not commit.** Duplicate-only and empty batches create no Iceberg snapshot,
   and one batch is one snapshot.
 

@@ -100,5 +100,5 @@ Results are in `docs/RESULTS.md`.
 - Results may differ in the last digits across library versions (statsmodels, scikit-learn).
   The manifest records the versions, and figures are quoted to one decimal place.
 - The run takes tens of minutes, dominated by gradient boosting.
-- Until the warehouse path fix lands, the command must be run from the project folder against
-  a store created there.
+- A warehouse built before the absolute-path fix (see ADR 0003) can only be opened from the
+  folder where it was created. Rebuild it from the raw archive to remove that limit.

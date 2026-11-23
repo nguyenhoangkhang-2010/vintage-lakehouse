@@ -73,3 +73,7 @@ new limitation, and keep entries factual.
   would take about 40 minutes and needs thinning (one run on one machine).
 - **Baselines need a minimum history** (60 to 100 periods). Shorter origins must be skipped via
   `ReplayConfig.min_history`.
+- **Older warehouses must be rebuilt.** A warehouse created before the absolute-path fix
+  records relative file locations and only opens from the folder where it was created. It can be
+  rebuilt from the raw archive without a download (`data/README.md`). New warehouses are not
+  affected.
