@@ -50,6 +50,16 @@ counts as known, never advance it, so `as_of` queries cannot leak a value that w
 available. The cost is that a real version released early on day `D` is invisible to queries
 made later that same day.
 
+## Same-day releases
+
+Two versions of the same period released on the same day get the same `knowledge_time` after the
+conversion above, so they have the same key. This is real: in Delphi FluView's national series,
+epiweek 201640 has issues 201740 and 201741 both released on 2017-10-24, with identical values.
+Ingestion treats the second as a duplicate of the first, which is correct when the values match.
+If the values differed, the store would raise `ConflictError` and ingestion would stop. That did
+not happen in the national series from 2010 to 2026, and no rule is defined for it yet (for
+example "keep the later issue"). It needs its own decision when a source produces such a case.
+
 ## Consequences
 
 - Correctness depends on the quality of the source's issue dates; sources without them cannot

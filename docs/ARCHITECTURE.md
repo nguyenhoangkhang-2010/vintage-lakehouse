@@ -24,7 +24,7 @@ flowchart LR
 | Package | Responsibility |
 |---------|----------------|
 | `storage` | Bitemporal model, `as_of` queries, store contract with a reference implementation |
-| `ingestion` | Source clients, revision detection, lineage records |
+| `ingestion` | Source clients, raw-response archive, revision detection, lineage log |
 | `replay` | Real-time replay and hindsight runs, scoring |
 | `forecast` | Simple baseline forecasters used by the replay harness |
 | `backfill` | Model that predicts how provisional values will be revised |
