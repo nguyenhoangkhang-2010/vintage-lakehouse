@@ -82,6 +82,14 @@ new limitation, and keep entries factual.
   part of the gap that comes from older values, from revisions that depend on the level or the
   season, or from a change in how the source revises (a bias that shifts over time is estimated
   from the past and applied to the present).
+- **The trust report's thresholds are conventions** (2% bias, 5 points of drift, 4 periods to
+  settle, 1% tolerance), not tested limits, and the report describes revisions that already
+  happened. It does not predict how a source will revise in future.
+- **The leak check only finds what its origins exercise**, assumes the pipeline is deterministic
+  and reads data only through the store it is given. It does not look inside models. An origin
+  with no later data is inconclusive.
+- **The static lint is a heuristic** with both false positives and false negatives (a leak
+  through a variable or a helper in another module is not seen).
 - **The correction does not widen the forecast intervals.** It changes the values the model
   sees, so the uncertainty of the correction itself is not in the prediction intervals.
 - **The correction needs the vintages of past periods**, not only the latest value of each, so

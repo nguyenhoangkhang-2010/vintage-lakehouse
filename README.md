@@ -121,7 +121,7 @@ src/vintage_lakehouse/
   forecast/    baseline forecasters
   experiment/  the leakage-gap and backfill-recovery experiments (runners, statistics, reports)
   backfill/    vintage table, revision correction and the corrected forecaster
-  audit/       trust report and leakage linter
+  audit/       trust report, leak check and lint (look-ahead in pipelines)
   api/         read-only HTTP API
 tests/         unit, property and integration tests
 docs/          research question, architecture, roadmap, ADRs, git workflow
@@ -138,6 +138,7 @@ data/          local data (git-ignored)
 - [Baseline forecasters](docs/BASELINES.md)
 - [Results](docs/RESULTS.md)
 - [Running the experiments](docs/EXPERIMENT.md), with the designs of the [leakage gap](docs/adr/0009-leakage-gap-experiment.md) and of the [backfill correction](docs/adr/0010-backfill-correction.md)
+- [Auditing a dataset and a pipeline](docs/AUDIT.md), designed in [ADR 0011](docs/adr/0011-trust-report-and-leakage-linter.md)
 - [Limitations](docs/LIMITATIONS.md)
 
 ## Scope

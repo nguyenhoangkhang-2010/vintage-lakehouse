@@ -76,6 +76,14 @@ class VintageTable:
         position = bisect_right(times, moment)
         return self._values[period][position - 1] if position else None
 
+    def periods(self) -> list[date]:
+        """Every period in the table, in order, whatever its first release."""
+        return list(self._periods)
+
+    def versions(self, period: date) -> list[tuple[datetime, float]]:
+        """The versions of a period as (knowledge_time, value), oldest first (empty if unknown)."""
+        return list(zip(self._times.get(period, []), self._values.get(period, []), strict=True))
+
     def periods_known(self, moment: datetime) -> list[date]:
         """The periods first reported at ``moment`` or earlier, in order."""
         return [p for p in self._periods if self._times[p][0] <= moment]

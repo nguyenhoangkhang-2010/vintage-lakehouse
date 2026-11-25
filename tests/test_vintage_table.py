@@ -71,3 +71,13 @@ def test_mixed_series_are_rejected() -> None:
     mixed = [*revised_series(3, [1.0] * 3), *revised_series(3, [1.0] * 3, series="other")]
     with pytest.raises(ValueError, match="one series"):
         VintageTable.from_observations(mixed)
+
+
+def test_periods_and_versions_expose_what_the_table_holds() -> None:
+    t = table(6)
+    assert t.periods() == [week(i) for i in range(6)]
+    # week 2: 8.0 at report 2, 9.0 at report 3, 10.0 at report 4
+    versions = t.versions(week(2))
+    assert [when for when, _ in versions] == [report_time(2), report_time(3), report_time(4)]
+    assert [value for _, value in versions] == pytest.approx([8.0, 9.0, 10.0])
+    assert t.versions(week(99)) == []
