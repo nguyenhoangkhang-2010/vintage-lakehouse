@@ -67,6 +67,15 @@ All notable changes are documented here. The format follows
   (-9.3% [-15.4%, -1.8%]) and had no detectable effect on gradient boosting; the revision bias it
   learned early in the series was gone from 2015 on.
 
+- Dataset trust report (`vintage-lakehouse audit trust-report`): revision size by age, settling
+  time, bias by year and plain-language findings, from the stored vintages. On FluView it flags
+  that the first-release bias drifts, which is why the backfill correction failed.
+- Look-ahead checks: `audit leak-check` runs a pipeline with every version published after the
+  origin altered and removed (a seeded leak is found; origins with no later data are
+  inconclusive), and `audit lint` is a heuristic AST scan with seven rules. ADR 0011,
+  `docs/AUDIT.md`, and example pipelines in `examples/audit/`.
+- `VintageTable.periods()` and `VintageTable.versions()`.
+
 ### Fixed
 - A warehouse created with a relative path (the default `--data-dir data`) could only be opened
   from the folder where it was created, because Iceberg stored relative file locations. The
