@@ -81,6 +81,16 @@ All notable changes are documented here. The format follows
   to the series as known now. Standard library only, bound to this machine by default, with a
   strict content security policy and no external resources. ADR 0012, `docs/DEMO.md`.
 
+- `vintage-lakehouse benchmark`: query latency against table size, ingestion throughput,
+  commit fragmentation and the storage overhead of keeping every version against a snapshot at
+  every release, on synthetic data and optionally on the stored series (`--from-store`), with the
+  machine description and configuration written next to the numbers. ADR 0013,
+  `docs/BENCHMARKS.md`.
+- `IcebergStore.file_count()`.
+- Finding (`docs/BENCHMARKS.md`): an Iceberg query for one series slows down as the table gains
+  commits, not because of the data it reads (434 ms across 100 commits against 107 ms for the
+  same data in one).
+
 ### Fixed
 - A warehouse created with a relative path (the default `--data-dir data`) could only be opened
   from the folder where it was created, because Iceberg stored relative file locations. The

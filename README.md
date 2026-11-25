@@ -48,8 +48,9 @@ Full tables, caveats and how to reproduce: [docs/RESULTS.md](docs/RESULTS.md).
 | Leakage gap, ETS | 6.4% [1.3%, 10.0%] | FluView national wILI | `feature/leakage-gap-experiment` |
 | Leakage gap, gradient boosting | 2.6% [0.7%, 4.9%] | FluView national wILI | `feature/leakage-gap-experiment` |
 | Gap recovered by a backfill correction (ETS, 95% CI) | no recovery: made ETS worse (-9.3% [-15.4%, -1.8%]); GBM +0.4% [-1.2%, 1.8%] | FluView national wILI | `feature/backfill-model` |
-| `as_of` query latency vs table size | not measured yet | – | `feature/benchmarks` |
-| Versioning storage overhead vs full snapshots | not measured yet | – | `feature/benchmarks` |
+| `as_of` query latency, Iceberg store (median) | 53 ms on the real series; 72 ms for 7.8k versions, 434 ms for 781k versions in 100 series (107 ms when loaded as one commit) | FluView national wILI and synthetic | `feature/benchmarks` |
+| Versioning storage vs a full snapshot at every release | 51,676 versions against 377,086 snapshot rows (7.3x); Parquet 0.19 MB against 0.57 MB (3.1x) | FluView national wILI | `feature/benchmarks` |
+| Ingestion throughput | `append` 40 to 45 thousand versions/s; whole pipeline from the raw archive 51,676 versions in 34 s | FluView national wILI and synthetic | `feature/benchmarks` |
 
 ## Quickstart (development)
 
@@ -123,6 +124,7 @@ src/vintage_lakehouse/
   backfill/    vintage table, revision correction and the corrected forecaster
   audit/       trust report, leak check and lint (look-ahead in pipelines)
   api/         read-only HTTP API and the time-slider demo page
+  benchmarks/  latency, ingestion and storage benchmarks
 tests/         unit, property and integration tests
 docs/          research question, architecture, roadmap, ADRs, git workflow
 data/          local data (git-ignored)
@@ -138,6 +140,7 @@ data/          local data (git-ignored)
 - [Baseline forecasters](docs/BASELINES.md)
 - [Results](docs/RESULTS.md)
 - [Running the experiments](docs/EXPERIMENT.md), with the designs of the [leakage gap](docs/adr/0009-leakage-gap-experiment.md) and of the [backfill correction](docs/adr/0010-backfill-correction.md)
+- [Benchmarks](docs/BENCHMARKS.md): machine, commands and figures, designed in [ADR 0013](docs/adr/0013-benchmarks.md)
 - [Time-slider demo and read-only API](docs/DEMO.md), designed in [ADR 0012](docs/adr/0012-read-only-api-and-demo.md)
 - [Auditing a dataset and a pipeline](docs/AUDIT.md), designed in [ADR 0011](docs/adr/0011-trust-report-and-leakage-linter.md)
 - [Limitations](docs/LIMITATIONS.md)

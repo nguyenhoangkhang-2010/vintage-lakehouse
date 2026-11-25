@@ -40,7 +40,9 @@ new limitation, and keep entries factual.
   calls), but slow for chunks with thousands of periods; a bulk read would need a contract
   change.
 - **Many small commits.** Each chunk is one Iceberg commit, so a 17-year pull creates 17 small
-  data files; there is no compaction yet.
+  data files; there is no compaction yet. Measured (`docs/BENCHMARKS.md`): planning a scan grows
+  with the number of commits, so the same 781,000 versions took 389 ms to query as 100 commits
+  and 107 ms as one.
 - **Replay cost.** The harness calls `as_of` once per origin. On the Iceberg store with the
   national series that is about 70 ms per origin (548 weekly origins took about 37 seconds).
   Many series or many more origins will need a bulk read.
@@ -82,6 +84,12 @@ new limitation, and keep entries factual.
   part of the gap that comes from older values, from revisions that depend on the level or the
   season, or from a change in how the source revises (a bias that shifts over time is estimated
   from the past and applied to the present).
+- **Benchmark numbers are from one machine and one run each**, on local disk with one writer
+  (`docs/BENCHMARKS.md`). The whole-pipeline ingestion time is a single timing outside the
+  benchmark command, and the split between revision detection and storage was not profiled.
+- **Iceberg string statistics are truncated to 16 characters by default**, so series ids that
+  share their first 16 characters are not told apart when pruning files. It did not change
+  latency in the benchmark, but it would matter with many large files.
 - **The API and demo are a demo server.** Standard library only, no TLS, no authentication, no
   rate limiting, and every request queries the store (about 0.2 s for the national series). It
   is read-only and local by default, but it is not meant to be exposed to a network.

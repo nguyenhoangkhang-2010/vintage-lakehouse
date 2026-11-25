@@ -12,6 +12,7 @@ from pathlib import Path
 from vintage_lakehouse import __version__
 from vintage_lakehouse.api import command as api_command
 from vintage_lakehouse.audit import command as audit_command
+from vintage_lakehouse.benchmarks import command as benchmark_command
 from vintage_lakehouse.config import Settings
 from vintage_lakehouse.experiment import command as experiment_command
 from vintage_lakehouse.experiment import recovery_command
@@ -76,6 +77,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Measure how much of the leakage gap a backfill correction recovers in real time.",
     )
     recovery_command.add_arguments(backfill_recovery)
+
+    benchmark = subparsers.add_parser(
+        "benchmark", help="Measure query latency, ingestion throughput and storage overhead."
+    )
+    benchmark_command.add_arguments(benchmark)
 
     serve = subparsers.add_parser(
         "serve", help="Serve the read-only API and the time-slider demo page."
@@ -192,6 +198,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _run_gate()
     if args.command == "ingest":
         return _run_ingest(args)
+    if args.command == "benchmark":
+        return benchmark_command.run(args)
     if args.command == "serve":
         return api_command.run(args)
     if args.command == "audit":

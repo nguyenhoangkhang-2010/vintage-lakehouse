@@ -203,6 +203,11 @@ class IcebergStore:
             connection.close()
         return _to_observations(latest)
 
+    def file_count(self) -> int:
+        """How many data files the table currently has (each ``append`` adds at least one)."""
+        self._table.refresh()
+        return len(list(self._table.scan().plan_files()))
+
     def revisions(self, series_id: str, event_time: date) -> list[Observation]:
         """Return all versions of one event_time, oldest first."""
         scanned = self._scan(
