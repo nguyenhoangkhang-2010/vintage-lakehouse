@@ -82,6 +82,9 @@ new limitation, and keep entries factual.
   part of the gap that comes from older values, from revisions that depend on the level or the
   season, or from a change in how the source revises (a bias that shifts over time is estimated
   from the past and applied to the present).
+- **The API and demo are a demo server.** Standard library only, no TLS, no authentication, no
+  rate limiting, and every request queries the store (about 0.2 s for the national series). It
+  is read-only and local by default, but it is not meant to be exposed to a network.
 - **The trust report's thresholds are conventions** (2% bias, 5 points of drift, 4 periods to
   settle, 1% tolerance), not tested limits, and the report describes revisions that already
   happened. It does not predict how a source will revise in future.

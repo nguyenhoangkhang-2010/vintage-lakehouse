@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vintage time slider</title>
+<style>
+:root {
+  --bg: #fbfaf7; --panel: #ffffff; --text: #1f2328; --muted: #5b636e; --line: #d9d6cf;
+  --then: #1456c8; --now: #8a8f98; --warn: #b4540a; --focus: #1456c8;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161a; --panel: #1b1e23; --text: #e8e6e1; --muted: #a0a6b0; --line: #343a43;
+    --then: #6ea2ff; --now: #7d8590; --warn: #f0a15c; --focus: #6ea2ff;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 1.4rem; margin: 0 0 4px; }
+.lead { color: var(--muted); margin: 0 0 20px; max-width: 62ch; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px; margin-bottom: 16px; }
+.controls { display: grid; gap: 12px; }
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+label { font-weight: 600; }
+select, button { font: inherit; color: var(--text); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+button { cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }
+select:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--focus);
+  outline-offset: 2px; }
+input[type=range] { flex: 1 1 260px; min-width: 0; accent-color: var(--then); }
+.readout { font-size: 1.05rem; margin: 0; min-height: 3em; }
+.readout strong { font-variant-numeric: tabular-nums; }
+.up { color: var(--warn); }
+svg { width: 100%; height: auto; display: block; }
+.axis { stroke: var(--line); stroke-width: 1; }
+.tick { fill: var(--muted); font-size: 12px; }
+.now-line { fill: none; stroke: var(--now); stroke-width: 1.5; }
+.then-line { fill: none; stroke: var(--then); stroke-width: 2.5; }
+.edge { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 4; }
+.prov { fill: var(--panel); stroke: var(--then); stroke-width: 2; }
+.legend { display: flex; gap: 20px; flex-wrap: wrap; color: var(--muted); font-size: .9rem;
+  margin: 8px 0 0; }
+.k-then { border-color: var(--then); }
+.k-now { border-color: var(--now); }
+.key { display: inline-block; width: 22px; height: 0; border-top: 3px solid; vertical-align: middle;
+  margin-right: 6px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--muted); font-weight: 600; font-size: .9rem; }
+.error { color: var(--warn); font-weight: 600; }
+.note { color: var(--muted); font-size: .9rem; }
+@media (max-width: 560px) { th:nth-child(5), td:nth-child(5) { display: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Vintage time slider</h1>
+  <p class="lead">The same series looks different depending on when you look. Move the slider to a
+  date: the thick line is the series as it was known then, the thin line is the series as it is
+  known now. The gap at the right-hand end is what later revisions changed.</p>
+
+  <section class="card controls" aria-label="Controls">
+    <div class="row">
+      <label for="series">Series</label>
+      <select id="series"></select>
+    </div>
+    <div class="row">
+      <button id="prev" type="button" aria-label="One week earlier">&#8592; Week</button>
+      <input id="slider" type="range" min="0" max="0" step="1" value="0"
+             aria-label="Moment in time">
+      <button id="next" type="button" aria-label="One week later">Week &#8594;</button>
+    </div>
+    <p id="readout" class="readout" aria-live="polite">Loading&hellip;</p>
+  </section>
+
+  <section class="card" aria-label="Chart">
+    <svg id="chart" viewBox="0 0 940 340" role="img"
+         aria-label="The series as known at the chosen moment and as known now"></svg>
+    <p class="legend">
+      <span><span class="key k-then"></span>as known then</span>
+      <span><span class="key k-now"></span>as known now</span>
+      <span>&#9675; latest weeks, still provisional then</span>
+    </p>
+  </section>
+
+  <section class="card" aria-label="Latest weeks then and now">
+    <table>
+      <thead><tr><th>Week</th><th>Then</th><th>Now</th><th>Revision</th><th>Published</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p class="note">Read-only view of the stored versions. Each value is the latest version
+    published by the chosen moment; nothing published later is used.</p>
+  </section>
+</main>
+<script>
+"use strict";
+const WEEK = 7 * 24 * 3600 * 1000;
+const WINDOW_WEEKS = 104, AHEAD_WEEKS = 26, PROVISIONAL = 4, ROWS = 6;
+const el = (id) => document.getElementById(id);
+const state = { series: null, first: 0, last: 0, latest: [], controller: null, timer: null,
+  drawn: null, resize: null };
+
+const day = (ms) => new Date(ms).toISOString().slice(0, 10);
+const num = (v) => v.toFixed(2);
+
+async function getJson(url, signal) {
+  const response = await fetch(url, { signal });
+  const body = await response.json();
+  if (!response.ok) throw new Error(body.error || response.statusText);
+  return body;
+}
+const q = (s) => encodeURIComponent(s);
+
+function showError(error) {
+  if (error.name === "AbortError") return;
+  const readout = el("readout");
+  readout.textContent = "";
+  const span = document.createElement("span");
+  span.className = "error";
+  span.textContent = "Could not load data: " + error.message;
+  readout.appendChild(span);
+}
+
+async function loadSeries(id) {
+  state.series = id;
+  const range = await getJson("/api/series/" + q(id) + "/range");
+  if (!range.periods) throw new Error("this series has no data");
+  state.first = Date.parse(range.first_knowledge_time);
+  state.last = Date.parse(range.last_knowledge_time);
+  const steps = Math.max(0, Math.floor((state.last - state.first) / WEEK));
+  const slider = el("slider");
+  slider.max = String(steps);
+  slider.value = String(Math.round(steps * 0.75));
+  const now = await getJson("/api/series/" + q(id) + "/as_of?at=" + q(range.last_knowledge_time));
+  state.latest = now.observations.map((o) => ({ t: Date.parse(o.event_time), v: o.value }));
+  await update();
+}
+
+function momentOfSlider() {
+  const index = Number(el("slider").value);
+  return Math.min(state.last, state.first + index * WEEK);
+}
+
+async function update() {
+  if (state.controller) state.controller.abort();
+  const controller = new AbortController();
+  state.controller = controller;
+  const at = new Date(momentOfSlider()).toISOString();
+  try {
+    const then = await getJson(
+      "/api/series/" + q(state.series) + "/as_of?at=" + q(at), controller.signal);
+    render(at, then.observations.map((o) => ({
+      t: Date.parse(o.event_time), v: o.value, published: o.knowledge_time })));
+  } catch (error) {
+    showError(error);
+  }
+}
+
+function scheduleUpdate() {
+  el("prev").disabled = Number(el("slider").value) <= 0;
+  el("next").disabled = Number(el("slider").value) >= Number(el("slider").max);
+  clearTimeout(state.timer);
+  state.timer = setTimeout(update, 120);
+}
+
+function render(at, then) {
+  const nowByTime = new Map(state.latest.map((p) => [p.t, p.v]));
+  const readout = el("readout");
+  readout.textContent = "";
+  if (!then.length) {
+    readout.textContent = "As of " + day(Date.parse(at)) + ": nothing had been published yet.";
+    el("rows").textContent = "";
+    el("chart").textContent = "";
+    return;
+  }
+  const edge = then[then.length - 1];
+  const nowAtEdge = nowByTime.get(edge.t);
+  const parts = ["As of ", strong(day(Date.parse(at))), ": the latest week known is ",
+    strong(day(edge.t)), " at ", strong(num(edge.v))];
+  if (nowAtEdge !== undefined) {
+    const change = ((nowAtEdge - edge.v) / edge.v) * 100;
+    parts.push("; it is now ", strong(num(nowAtEdge)), " (",
+      Object.assign(strong((change >= 0 ? "+" : "") + change.toFixed(1) + "%"),
+        { className: Math.abs(change) >= 2 ? "up" : "" }), ").");
+  } else {
+    parts.push(".");
+  }
+  parts.forEach((p) => readout.append(p));
+  drawChart(then, edge.t);
+  drawRows(then, nowByTime);
+}
+
+function strong(text) {
+  const node = document.createElement("strong");
+  node.textContent = text;
+  return node;
+}
+
+function svg(name, attrs) {
+  const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+  return node;
+}
+
+function drawChart(then, edgeTime) {
+  const chart = el("chart");
+  chart.textContent = "";
+  // Draw at the size it is shown, so that labels stay readable on a narrow screen.
+  const W = Math.max(300, Math.round(chart.parentElement.clientWidth - 32 || 940));
+  const H = Math.round(Math.min(340, Math.max(220, W * 0.42)));
+  const L = 40, R = 10, T = 12, B = 28;
+  chart.setAttribute("viewBox", "0 0 " + W + " " + H);
+  state.drawn = { then, edgeTime };
+  const from = edgeTime - WINDOW_WEEKS * WEEK, to = edgeTime + AHEAD_WEEKS * WEEK;
+  const inWindow = (p) => p.t >= from && p.t <= to;
+  const visibleThen = then.filter(inWindow), visibleNow = state.latest.filter(inWindow);
+  const top = Math.max(1, ...visibleThen.map((p) => p.v), ...visibleNow.map((p) => p.v)) * 1.08;
+  const x = (t) => L + ((t - from) / (to - from)) * (W - L - R);
+  const y = (v) => T + (1 - v / top) * (H - T - B);
+  const path = (points) => points.map((p, i) => (i ? "L" : "M") + x(p.t).toFixed(1) + " "
+    + y(p.v).toFixed(1)).join("");
+
+  for (let i = 0; i <= 4; i++) {
+    const value = (top * i) / 4;
+    chart.appendChild(svg("line", { class: "axis", x1: L, x2: W - R, y1: y(value), y2: y(value) }));
+    const label = svg("text", { class: "tick", x: L - 6, y: y(value) + 4, "text-anchor": "end" });
+    label.textContent = value.toFixed(1);
+    chart.appendChild(label);
+  }
+  for (let year = new Date(from).getUTCFullYear() + 1; year <= new Date(to).getUTCFullYear();
+       year++) {
+    const t = Date.UTC(year, 0, 1);
+    const label = svg("text", { class: "tick", x: x(t), y: H - 8, "text-anchor": "middle" });
+    label.textContent = String(year);
+    chart.appendChild(label);
+  }
+  chart.appendChild(svg("path", { class: "now-line", d: path(visibleNow) }));
+  chart.appendChild(svg("path", { class: "then-line", d: path(visibleThen) }));
+  chart.appendChild(svg("line", { class: "edge", x1: x(edgeTime), x2: x(edgeTime), y1: T,
+    y2: H - B }));
+  for (const p of visibleThen.slice(-PROVISIONAL)) {
+    chart.appendChild(svg("circle", { class: "prov", cx: x(p.t), cy: y(p.v), r: 4 }));
+  }
+}
+
+function drawRows(then, nowByTime) {
+  const body = el("rows");
+  body.textContent = "";
+  for (const p of then.slice(-ROWS).reverse()) {
+    const now = nowByTime.get(p.t);
+    const change = now === undefined ? null : ((now - p.v) / p.v) * 100;
+    const row = document.createElement("tr");
+    const cells = [day(p.t), num(p.v), now === undefined ? "n/a" : num(now),
+      change === null ? "n/a" : (change >= 0 ? "+" : "") + change.toFixed(1) + "%",
+      p.published.slice(0, 10)];
+    for (const text of cells) {
+      const cell = document.createElement("td");
+      cell.textContent = text;
+      row.appendChild(cell);
+    }
+    body.appendChild(row);
+  }
+}
+
+window.addEventListener("resize", () => {
+  clearTimeout(state.resize);
+  state.resize = setTimeout(() => {
+    if (state.drawn) drawChart(state.drawn.then, state.drawn.edgeTime);
+  }, 150);
+});
+el("slider").addEventListener("input", scheduleUpdate);
+el("prev").addEventListener("click", () => {
+  el("slider").stepDown(); scheduleUpdate();
+});
+el("next").addEventListener("click", () => {
+  el("slider").stepUp(); scheduleUpdate();
+});
+el("series").addEventListener("change", (event) => {
+  loadSeries(event.target.value).catch(showError);
+});
+
+(async function start() {
+  try {
+    const { series } = await getJson("/api/series");
+    const select = el("series");
+    for (const id of series) {
+      const option = document.createElement("option");
+      option.value = option.textContent = id;
+      select.appendChild(option);
+    }
+    if (!series.length) throw new Error("no series are served");
+    await loadSeries(series[0]);
+    el("prev").disabled = false; el("next").disabled = false;
+  } catch (error) {
+    showError(error);
+  }
+})();
+</script>
+</body>
+</html>
