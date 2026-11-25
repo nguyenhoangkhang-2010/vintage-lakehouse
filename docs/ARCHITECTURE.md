@@ -30,7 +30,7 @@ flowchart LR
 | `experiment` | The leakage-gap and backfill-recovery experiments: runners, block-bootstrap statistics, report files, see [EXPERIMENT.md](EXPERIMENT.md) |
 | `backfill` | Vintage table, the median-revision-by-age correction, and a wrapper that corrects any forecaster's history (ADR 0010) |
 | `audit` | Trust report per dataset, a dynamic leak check that runs a pipeline with later data altered and removed, and a static lint, see [AUDIT.md](AUDIT.md) |
-| `api` | Read-only HTTP API over `as_of` queries |
+| `api` | Read-only HTTP API over `as_of` queries and the time-slider demo page, see [DEMO.md](DEMO.md) |
 
 ## Design rules
 

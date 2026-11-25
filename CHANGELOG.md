@@ -76,6 +76,11 @@ All notable changes are documented here. The format follows
   `docs/AUDIT.md`, and example pipelines in `examples/audit/`.
 - `VintageTable.periods()` and `VintageTable.versions()`.
 
+- `vintage-lakehouse serve`: a read-only HTTP API over `as_of` queries (`range`, `as_of`,
+  `revisions`) and a time-slider demo page that shows a series as known at a chosen moment next
+  to the series as known now. Standard library only, bound to this machine by default, with a
+  strict content security policy and no external resources. ADR 0012, `docs/DEMO.md`.
+
 ### Fixed
 - A warehouse created with a relative path (the default `--data-dir data`) could only be opened
   from the folder where it was created, because Iceberg stored relative file locations. The
