@@ -6,6 +6,10 @@ All notable changes are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-27
+
+Adds the licence. No code or result changes since 0.1.0.
+
 ### Added
 - MIT licence for the code (`LICENSE`, `license` in `pyproject.toml`). It covers the source code
   only, not the data the project reads, whose terms are separate (`docs/DATA_SOURCES.md`).
