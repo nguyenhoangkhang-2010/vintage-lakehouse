@@ -6,6 +6,13 @@ All notable changes are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-27
+
+First release. A bitemporal store with exact `as_of` queries, revision-aware ingestion, a replay
+harness, a leakage-gap experiment and a backfill-correction experiment on US influenza data, a
+trust report, look-ahead checks, a read-only API with a demo, benchmarks, and a technical report
+(`docs/REPORT.md`). Results include two negative or modest findings, reported as such.
+
 ### Added
 - Project skeleton: package layout, tooling (ruff, mypy, pytest), pre-commit, CI, and
   project documents (research question, architecture, roadmap, ADRs, git workflow).
@@ -88,8 +95,8 @@ All notable changes are documented here. The format follows
   `docs/BENCHMARKS.md`.
 - `IcebergStore.file_count()`.
 - Finding (`docs/BENCHMARKS.md`): an Iceberg query for one series slows down as the table gains
-  commits, not because of the data it reads (434 ms across 100 commits against 107 ms for the
-  same data in one).
+  commits, not because of the data it reads (a latest-release query on the same 781,000
+  versions: 389 ms as 100 commits, 107 ms as one).
 
 ### Fixed
 - A warehouse created with a relative path (the default `--data-dir data`) could only be opened

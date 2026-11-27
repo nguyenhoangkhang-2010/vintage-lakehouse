@@ -3,9 +3,12 @@
 > A point-in-time (bitemporal) lakehouse for data that gets revised, plus a "time machine"
 > that measures how much forecast accuracy is inflated by evaluating in hindsight.
 
-**Status: early development.** The data layer, the replay harness, three baseline forecasters
-and the first experiment exist. The results table below is filled in by the branches listed in
-[docs/ROADMAP.md](docs/ROADMAP.md); a row says "not measured yet" until it is measured.
+**Status: version 0.1.0 (alpha).** All the roadmap branches are done: the data layer, the replay
+harness, three baseline forecasters, the leakage-gap and backfill-correction experiments, the
+trust report and look-ahead checks, a read-only API with a demo, and benchmarks. Start with the
+[technical report](docs/REPORT.md), which gives the findings, including the negative ones, and the
+limitations. Everything measured is one series (US influenza surveillance), three simple models and one
+machine.
 
 ## Why this exists
 
@@ -48,7 +51,7 @@ Full tables, caveats and how to reproduce: [docs/RESULTS.md](docs/RESULTS.md).
 | Leakage gap, ETS | 6.4% [1.3%, 10.0%] | FluView national wILI | `feature/leakage-gap-experiment` |
 | Leakage gap, gradient boosting | 2.6% [0.7%, 4.9%] | FluView national wILI | `feature/leakage-gap-experiment` |
 | Gap recovered by a backfill correction (ETS, 95% CI) | no recovery: made ETS worse (-9.3% [-15.4%, -1.8%]); GBM +0.4% [-1.2%, 1.8%] | FluView national wILI | `feature/backfill-model` |
-| `as_of` query latency, Iceberg store (median) | 53 ms on the real series; 72 ms for 7.8k versions, 434 ms for 781k versions in 100 series (107 ms when loaded as one commit) | FluView national wILI and synthetic | `feature/benchmarks` |
+| `as_of` query latency, Iceberg store (median) | 53 ms on the real series; 72 ms for 7.8k versions, 434 ms for 781k versions in 100 series; the latest-release query on those 781k takes 389 ms as 100 commits and 107 ms as one | FluView national wILI and synthetic | `feature/benchmarks` |
 | Versioning storage vs a full snapshot at every release | 51,676 versions against 377,086 snapshot rows (7.3x); Parquet 0.19 MB against 0.57 MB (3.1x) | FluView national wILI | `feature/benchmarks` |
 | Ingestion throughput | `append` 40 to 45 thousand versions/s; whole pipeline from the raw archive 51,676 versions in 34 s | FluView national wILI and synthetic | `feature/benchmarks` |
 
@@ -132,6 +135,7 @@ data/          local data (git-ignored)
 
 ## Project documents
 
+- [Technical report](docs/REPORT.md): findings, method, verification and limitations
 - [Research question](docs/RESEARCH_QUESTION.md)
 - [Architecture](docs/ARCHITECTURE.md) and [ADRs](docs/adr)
 - [Roadmap and branch plan](docs/ROADMAP.md)
