@@ -3,7 +3,7 @@
 > A point-in-time (bitemporal) lakehouse for data that gets revised, plus a "time machine"
 > that measures how much forecast accuracy is inflated by evaluating in hindsight.
 
-**Status: version 0.1.0 (alpha).** All the roadmap branches are done: the data layer, the replay
+**Status: version 0.1.1 (alpha).** All the roadmap branches are done: the data layer, the replay
 harness, three baseline forecasters, the leakage-gap and backfill-correction experiments, the
 trust report and look-ahead checks, a read-only API with a demo, and benchmarks. Start with the
 [technical report](docs/REPORT.md), which gives the findings, including the negative ones, and the

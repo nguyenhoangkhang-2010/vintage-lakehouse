@@ -1,6 +1,6 @@
 # vintage-lakehouse: technical report
 
-*Version 0.1.0. Every number in this report comes from a command in this repository and is
+*Version 0.1.1 (the results are those of 0.1.0; the only later change is the licence). Every number in this report comes from a command in this repository and is
 written in a document next to it; the sources are named in each section.*
 
 ## 1. Summary
@@ -292,7 +292,7 @@ important ones are these.
 - **Data licence not verified.** The week-0 gate's licence criterion stayed open: Delphi asks for
   citation and the data originates from the US CDC, but the full terms were not read. Derived
   results are therefore not published as files. The code is under the MIT licence (`LICENSE`,
-  added after the `v0.1.0` tag), which does not cover the data.
+  added in 0.1.1), which does not cover the data.
 - **The source is being retired.** Reproducing the data pull depends on the legacy API or on the
   saved raw archive.
 - **Single writer, local storage.** Concurrent writers, remote object storage and compaction are
