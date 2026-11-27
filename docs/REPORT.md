@@ -291,8 +291,8 @@ important ones are these.
 
 - **Data licence not verified.** The week-0 gate's licence criterion stayed open: Delphi asks for
   citation and the data originates from the US CDC, but the full terms were not read. Derived
-  results are therefore not published as files. **The repository has no software licence file yet**;
-  that choice belongs to the author.
+  results are therefore not published as files. The code is under the MIT licence (`LICENSE`,
+  added after the `v0.1.0` tag), which does not cover the data.
 - **The source is being retired.** Reproducing the data pull depends on the legacy API or on the
   saved raw archive.
 - **Single writer, local storage.** Concurrent writers, remote object storage and compaction are
