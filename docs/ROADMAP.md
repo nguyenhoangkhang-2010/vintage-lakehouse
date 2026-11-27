@@ -20,6 +20,9 @@ request (see [GIT_WORKFLOW.md](GIT_WORKFLOW.md)). Durations are estimates, to be
 | 13 | `feature/benchmarks` | Latency, throughput and storage-overhead benchmarks | Numbers and the commands that produce them are in the README |
 | 14 | `docs/technical-report` | 4 to 8 page technical report | Limitations section is complete |
 
+**Status:** all 14 branches are complete as of version 0.1.0. The schedule below was an
+estimate made at the start.
+
 ## Estimated schedule (adjust to reality)
 
 | Week | Focus |

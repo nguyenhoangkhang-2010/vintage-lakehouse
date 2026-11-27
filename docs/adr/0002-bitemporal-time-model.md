@@ -1,6 +1,6 @@
 # ADR 0002: Bitemporal time model
 
-- Status: Proposed (becomes Accepted when `feature/time-model` is merged)
+- Status: Accepted (implemented in `feature/time-model`)
 
 ## Context
 
@@ -24,6 +24,41 @@ Each observation carries three explicit times:
 
 `as_of(t)` uses only `knowledge_time`: for each `event_time` it returns the latest version with
 `knowledge_time <= t`. `ingest_time` is never used to answer `as_of` queries.
+
+## Validation rules
+
+Enforced when an `Observation` is created:
+
+- `series_id` and `source` are non-empty strings.
+- `event_time` is a `date`, not a `datetime`.
+- `knowledge_time` is timezone-aware and is converted to UTC. Its UTC date must not be before
+  `event_time`: a version cannot be known before the period it describes begins.
+- `value` is a finite real number. `bool`, NaN and infinities are rejected.
+- `ingest_time` is optional; when present it is timezone-aware and converted to UTC.
+- `ingest_time` is not required to be after `knowledge_time`, because date-only publication
+  stamps (below) are converted conservatively and may fall after the true load time.
+
+Not modelled yet: a version that retracts a value (a missing value). It will need its own
+decision when a source requires it.
+
+## Date-only publication stamps
+
+Some sources (for example Delphi FluView) give only the day a version was released. A value
+released on day `D` may have appeared at any moment of that day, so it is treated as known from
+the start of `D + 1` (00:00 UTC) by `knowledge_time_from_date`. This can only delay when a value
+counts as known, never advance it, so `as_of` queries cannot leak a value that was not yet
+available. The cost is that a real version released early on day `D` is invisible to queries
+made later that same day.
+
+## Same-day releases
+
+Two versions of the same period released on the same day get the same `knowledge_time` after the
+conversion above, so they have the same key. This is real: in Delphi FluView's national series,
+epiweek 201640 has issues 201740 and 201741 both released on 2017-10-24, with identical values.
+Ingestion treats the second as a duplicate of the first, which is correct when the values match.
+If the values differed, the store would raise `ConflictError` and ingestion would stop. That did
+not happen in the national series from 2010 to 2026, and no rule is defined for it yet (for
+example "keep the later issue"). It needs its own decision when a source produces such a case.
 
 ## Consequences
 

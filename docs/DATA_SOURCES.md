@@ -16,18 +16,84 @@ A source passes only if all of the following hold:
 | 4 | Licence allows the use (and, ideally, redistribution of derived results) | Public repository |
 | 5 | Rate limits allow a full historical pull in reasonable time | Practical ingestion |
 
-## Candidates (unverified)
+## Candidates
 
 | Candidate | Domain | What to check |
 |-----------|--------|---------------|
-| Delphi Epidata (CMU) | Epidemiology | Whether versions and issue dates can be queried; which signals; terms of use |
-| ALFRED (St. Louis Fed) | Economics | Vintage coverage per series; access method; terms of use |
+| Delphi Epidata, FluView endpoint (CMU) | Epidemiology | Versions and issue dates; access; terms of use |
+| ALFRED / FRED API (St. Louis Fed) | Economics | Vintage coverage per series; access method; terms of use |
 | A regional health or hydrology bulletin archive | Vietnam (stretch) | Whether past bulletins are archived so vintages can be reconstructed; legality of scraping |
 
 ## Findings
 
-Fill this table in during the gate. Do not remove failed candidates; record why they failed.
+Do not remove failed candidates; record why they failed.
 
 | Candidate | Checked on | Result | Notes |
 |-----------|-----------|--------|-------|
-| – | – | – | – |
+| Delphi FluView (national wILI) | 2026-11-20 | **Passes criteria 1, 2, 3, 5 on a sample; criterion 4 (licence) still manual** | See "Delphi FluView details" below |
+| ALFRED / FRED API | 2026-11-20 | **Not evaluated: blocked on an API key** | The FRED API answered HTTP 400 "api_key is not set" without a key; the ALFRED CSV endpoint reset the connection. Per FRED's documentation the key is free but personal, so the account must be created by the project owner. Revisit only if a second domain is wanted |
+| Vietnam bulletin archive | – | Not checked | Stretch goal; needs a feasibility and legality check first |
+
+### Delphi FluView details
+
+Gate output of `vintage-lakehouse gate delphi-fluview` on 2026-11-20 (national region,
+weighted ILI, epiweeks 5 and 25 of each year 2019 to 2025, 20 weekly issues each):
+
+| # | Criterion | Status | Detail |
+|---|-----------|--------|--------|
+| 1 | Several published versions per event time | pass | 14 event times; versions each: min 15, median 21; 100% changed value between versions |
+| 2 | At least 3 years of history | pass | 6.4 years sampled (2019-01-27 to 2025-06-15) |
+| 3 | Reproducible access without paid keys | pass | anonymous requests succeeded |
+| 4 | Licence allows the use | manual | not yet verified, see below |
+| 5 | Rate limits allow a full pull | pass (sample only) | 14 requests in 23.1s, 288 rows, no throttling; a full historical pull was not tested |
+
+What this does and does not show:
+
+- Each sampled week was published many times and its value changed between versions, so
+  `as_of` reconstruction is possible for early revisions (the first 20 weekly issues).
+- Later revisions exist too (for example week 202301 also has an issue from 2024) but were not
+  sampled yet.
+- **Access policy (from Delphi documentation found by web search):** anonymous access is
+  documented as rate-limited and restricted to public datasets, with limits on how many request
+  parameters may select multiple values, and a free key lifts these limits. In practice a full
+  national pull ran anonymously without throttling (see the 2026-11-23 update below). Larger
+  pulls, for example many regions, may still need a free key. If one is used it must be read
+  from an environment variable and never committed.
+- **Licence (criterion 4) is still open.** The Delphi documentation asks users to cite the
+  source for non-COVIDcast endpoints, and the underlying FluView data originates from the US
+  CDC. The full terms were not read. Before publishing derived results, read the terms linked
+  below and record the conclusion here.
+
+References to read for criterion 4:
+
+- Delphi Epidata documentation, API keys and privacy statement pages
+- FRED API terms of use (only if ALFRED is revisited)
+
+### Update 2026-11-23: full-history pull and status of the legacy API
+
+- **Full pull.** Anonymous, national region, epiweeks 2010 to 2026, publications up to issue
+  202638: 17 requests in about 66 seconds, 51,677 rows, 15,694 of them revisions (value changed
+  from the previous version), no throttling. A free key was not needed at this scale. This
+  corrects the earlier expectation in this file that a full pull would probably need one.
+- **Request shape.** `epiweeks` is required: `issues` on its own is rejected with "missing
+  parameter". Ranges of issues that cross a year boundary work. One request per year of
+  epiweeks, across all issues up to a fixed `last_issue`, returns about 4,000 rows.
+- **The legacy API is being retired.** For queries lying entirely after 2026-09-22 it answers
+  "this API no longer provides data with time values after 2026-09-22; it has been retired in
+  favor of cast-api / epidata-etl". Delphi's client documentation describes the move to V5 with
+  a tentative deprecation in October 2026. Historical data was still served on 2026-11-23.
+  Whether V5 offers the same per-issue history is not yet checked. See
+  [ADR 0006](adr/0006-archive-raw-responses.md).
+- **Same-day releases.** One pair of versions (epiweek 201640, issues 201740 and 201741) shares
+  the release date 2017-10-24 and has identical values. Date-only stamps give them the same
+  knowledge_time, so they are stored once. See [ADR 0002](adr/0002-bitemporal-time-model.md).
+
+### Rerun the gate
+
+```text
+vintage-lakehouse gate delphi-fluview
+pytest -m network
+```
+
+The first command makes 14 requests to the live API and exits with 0 (no failed criteria),
+1 (a criterion failed) or 2 (the source could not be reached).

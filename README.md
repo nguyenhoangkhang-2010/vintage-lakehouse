@@ -3,8 +3,12 @@
 > A point-in-time (bitemporal) lakehouse for data that gets revised, plus a "time machine"
 > that measures how much forecast accuracy is inflated by evaluating in hindsight.
 
-**Status: skeleton. There are no results yet.** The table below is filled in by the branches
-listed in [docs/ROADMAP.md](docs/ROADMAP.md); nothing here is claimed until it is measured.
+**Status: version 0.1.0 (alpha).** All the roadmap branches are done: the data layer, the replay
+harness, three baseline forecasters, the leakage-gap and backfill-correction experiments, the
+trust report and look-ahead checks, a read-only API with a demo, and benchmarks. Start with the
+[technical report](docs/REPORT.md), which gives the findings, including the negative ones, and the
+limitations. Everything measured is one series (US influenza surveillance), three simple models and one
+machine.
 
 ## Why this exists
 
@@ -38,12 +42,18 @@ Architecture and data flow: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Results
 
+US national weighted ILI (Delphi FluView), 137 origins from 2015 to 2025, horizons 1 to 4 weeks.
+Full tables, caveats and how to reproduce: [docs/RESULTS.md](docs/RESULTS.md).
+
 | Metric | Value | Dataset | Branch |
 |--------|-------|---------|--------|
-| Leakage gap (relative WIS) | not measured yet | – | `feature/leakage-gap-experiment` |
-| Gap recovered by backfill model | not measured yet | – | `feature/backfill-model` |
-| `as_of` query latency vs table size | not measured yet | – | `feature/benchmarks` |
-| Versioning storage overhead vs full snapshots | not measured yet | – | `feature/benchmarks` |
+| Leakage gap, seasonal naive (relative WIS, 95% CI) | 0.2% [-0.2%, 0.6%] | FluView national wILI | `feature/leakage-gap-experiment` |
+| Leakage gap, ETS | 6.4% [1.3%, 10.0%] | FluView national wILI | `feature/leakage-gap-experiment` |
+| Leakage gap, gradient boosting | 2.6% [0.7%, 4.9%] | FluView national wILI | `feature/leakage-gap-experiment` |
+| Gap recovered by a backfill correction (ETS, 95% CI) | no recovery: made ETS worse (-9.3% [-15.4%, -1.8%]); GBM +0.4% [-1.2%, 1.8%] | FluView national wILI | `feature/backfill-model` |
+| `as_of` query latency, Iceberg store (median) | 53 ms on the real series; 72 ms for 7.8k versions, 434 ms for 781k versions in 100 series; the latest-release query on those 781k takes 389 ms as 100 commits and 107 ms as one | FluView national wILI and synthetic | `feature/benchmarks` |
+| Versioning storage vs a full snapshot at every release | 51,676 versions against 377,086 snapshot rows (7.3x); Parquet 0.19 MB against 0.57 MB (3.1x) | FluView national wILI | `feature/benchmarks` |
+| Ingestion throughput | `append` 40 to 45 thousand versions/s; whole pipeline from the raw archive 51,676 versions in 34 s | FluView national wILI and synthetic | `feature/benchmarks` |
 
 ## Quickstart (development)
 
@@ -64,6 +74,47 @@ mypy
 vintage-lakehouse info
 ```
 
+## Loading data
+
+```text
+vintage-lakehouse ingest delphi-fluview --first-year 2010 --last-issue 202638
+```
+
+This pulls every published version of the national weighted ILI from Delphi FluView, one request
+per year, into a local Iceberg warehouse under `data/`. It saves each raw response and writes one
+lineage record per request. Running it again is safe: versions that are already stored are
+skipped. For each request it prints the new periods, the revisions (value changed from the
+previous version) and the largest revision. `--from-archive` replays the saved responses
+without any network access.
+
+The legacy Delphi API is being phased out ([ADR 0006](docs/adr/0006-archive-raw-responses.md)),
+so run a full pull soon and keep `data/raw`.
+
+## Using a store
+
+```python
+from datetime import date, datetime, timezone
+
+from vintage_lakehouse.storage import InMemoryStore, Observation
+
+store = InMemoryStore()  # or IcebergStore.local("warehouse") from vintage_lakehouse.storage.iceberg
+store.append(
+    [
+        Observation(
+            "fluview", date(2023, 1, 1), datetime(2023, 1, 14, tzinfo=timezone.utc), 4.00, "demo"
+        ),
+        Observation(
+            "fluview", date(2023, 1, 1), datetime(2023, 1, 21, tzinfo=timezone.utc), 4.10, "demo"
+        ),
+    ]
+)
+store.as_of("fluview", datetime(2023, 1, 15, tzinfo=timezone.utc))  # -> the 4.00 version
+```
+
+The Iceberg store needs the `iceberg` extra (`pip install -e ".[iceberg]"`, already part of
+`.[dev]`). Both stores pass the same contract tests, see
+[ADR 0005](docs/adr/0005-store-contract-semantics.md).
+
 ## Repository layout
 
 ```text
@@ -72,9 +123,11 @@ src/vintage_lakehouse/
   ingestion/   data sources and revision detection
   replay/      real-time replay and hindsight evaluation
   forecast/    baseline forecasters
-  backfill/    revision (backfill) model
-  audit/       trust report and leakage linter
-  api/         read-only HTTP API
+  experiment/  the leakage-gap and backfill-recovery experiments (runners, statistics, reports)
+  backfill/    vintage table, revision correction and the corrected forecaster
+  audit/       trust report, leak check and lint (look-ahead in pipelines)
+  api/         read-only HTTP API and the time-slider demo page
+  benchmarks/  latency, ingestion and storage benchmarks
 tests/         unit, property and integration tests
 docs/          research question, architecture, roadmap, ADRs, git workflow
 data/          local data (git-ignored)
@@ -82,11 +135,18 @@ data/          local data (git-ignored)
 
 ## Project documents
 
+- [Technical report](docs/REPORT.md): findings, method, verification and limitations
 - [Research question](docs/RESEARCH_QUESTION.md)
 - [Architecture](docs/ARCHITECTURE.md) and [ADRs](docs/adr)
 - [Roadmap and branch plan](docs/ROADMAP.md)
 - [Git workflow](docs/GIT_WORKFLOW.md) and [Contributing](CONTRIBUTING.md)
 - [Data sources and week-0 gate](docs/DATA_SOURCES.md)
+- [Baseline forecasters](docs/BASELINES.md)
+- [Results](docs/RESULTS.md)
+- [Running the experiments](docs/EXPERIMENT.md), with the designs of the [leakage gap](docs/adr/0009-leakage-gap-experiment.md) and of the [backfill correction](docs/adr/0010-backfill-correction.md)
+- [Benchmarks](docs/BENCHMARKS.md): machine, commands and figures, designed in [ADR 0013](docs/adr/0013-benchmarks.md)
+- [Time-slider demo and read-only API](docs/DEMO.md), designed in [ADR 0012](docs/adr/0012-read-only-api-and-demo.md)
+- [Auditing a dataset and a pipeline](docs/AUDIT.md), designed in [ADR 0011](docs/adr/0011-trust-report-and-leakage-linter.md)
 - [Limitations](docs/LIMITATIONS.md)
 
 ## Scope

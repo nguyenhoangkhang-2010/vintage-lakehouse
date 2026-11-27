@@ -24,12 +24,14 @@ flowchart LR
 | Package | Responsibility |
 |---------|----------------|
 | `storage` | Bitemporal model, `as_of` queries, store contract with a reference implementation |
-| `ingestion` | Source clients, revision detection, lineage records |
-| `replay` | Real-time replay and hindsight runs, scoring |
-| `forecast` | Simple baseline forecasters used by the replay harness |
-| `backfill` | Model that predicts how provisional values will be revised |
-| `audit` | Trust report per dataset and a linter that flags look-ahead in user pipelines |
-| `api` | Read-only HTTP API over `as_of` queries |
+| `ingestion` | Source clients, raw-response archive, revision detection, lineage log |
+| `replay` | Real-time and hindsight runs, scoring (WIS, error, coverage), leakage gap |
+| `forecast` | Baseline forecasters (seasonal naive, ETS, gradient boosting), see [BASELINES.md](BASELINES.md) |
+| `experiment` | The leakage-gap and backfill-recovery experiments: runners, block-bootstrap statistics, report files, see [EXPERIMENT.md](EXPERIMENT.md) |
+| `backfill` | Vintage table, the median-revision-by-age correction, and a wrapper that corrects any forecaster's history (ADR 0010) |
+| `audit` | Trust report per dataset, a dynamic leak check that runs a pipeline with later data altered and removed, and a static lint, see [AUDIT.md](AUDIT.md) |
+| `benchmarks` | Query latency, ingestion throughput, fragmentation and storage-overhead benchmarks, see [BENCHMARKS.md](BENCHMARKS.md) |
+| `api` | Read-only HTTP API over `as_of` queries and the time-slider demo page, see [DEMO.md](DEMO.md) |
 
 ## Design rules
 
