@@ -6,6 +6,10 @@ All notable changes are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- MIT licence for the code (`LICENSE`, `license` in `pyproject.toml`). It covers the source code
+  only, not the data the project reads, whose terms are separate (`docs/DATA_SOURCES.md`).
+
 ## [0.1.0] - 2026-11-27
 
 First release. A bitemporal store with exact `as_of` queries, revision-aware ingestion, a replay

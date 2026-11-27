@@ -153,3 +153,10 @@ data/          local data (git-ignored)
 
 This is research and decision-support tooling. It does not produce official forecasts or
 warnings, and its findings depend on the datasets it is run on.
+
+## Licence
+
+The code is released under the [MIT licence](LICENSE). The licence covers the source code only.
+The data the project reads (Delphi Epidata FluView, derived from US CDC data) has its own terms,
+which are not covered here and have not been fully reviewed; see
+[docs/DATA_SOURCES.md](docs/DATA_SOURCES.md).
